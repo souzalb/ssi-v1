@@ -1,43 +1,62 @@
-import { PrismaClient, Role } from '@prisma/client';
-import { UserSession } from '@/app/types'; // Certifique-se que o caminho está correto
+// Use o caminho correto para seus helpers
+import db from '@/app/_lib/prisma';
+import { UserSession } from '@/app/types';
+import { Prisma } from '@prisma/client';
 
 /**
- * Representa a "sessão" simulada.
- * No App Router, não podemos mais depender de um 'req' em 'getSession'
- * como fazíamos no Pages Router.
- *
- * Esta nova abordagem simula o usuário diretamente no servidor.
- * Quando migrarmos para uma solução real (NextAuth.js),
- * substituiremos esta função por 'auth()' ou 'getServerSession()'.
+ * E-mail do usuário que queremos simular.
+ * Este e-mail DEVE existir no seu banco de dados (criado pelo prisma/seed.ts).
  */
-
-// Este é o nosso usuário simulado.
-// Ele é um GESTOR de TI (MANAGER, area 'it').
-const simulatedUser: UserSession = {
-  id: 'clx01m4330000u8xth3d4c5c6', // ID do Gestor de TI (do seu seed)
-  name: 'Ana Silva (Gestora TI)',
-  email: 'gestor.ti@empresa.com',
-  role: 'MANAGER',
-  areaId: 'clx01m1ss0001u8xtf7a9d0b1', // ID da Área de TI (do seu seed)
-  photoUrl: null,
-};
+const SIMULATED_USER_EMAIL = 'gestor.ti@exemplo.com';
 
 /**
- * getSession (Versão App Router)
+ * getSession (Versão App Router, Corrigida)
  *
  * @description Simula a obtenção de uma sessão de usuário no servidor.
- * Retorna diretamente o nosso usuário simulado.
+ * Agora, ele busca o usuário no banco de dados pelo e-mail
+ * para garantir que os IDs (usuário e área) são válidos.
  *
  * @returns {Promise<{ user: UserSession } | null>}
  */
 export async function getSession(): Promise<{ user: UserSession } | null> {
-  // Em um app real, aqui você usaria o NextAuth.js:
-  // const session = await auth(); // (Exemplo com NextAuth/Auth.js)
-  // if (!session?.user) return null;
-  // return session;
+  try {
+    const user = await db.user.findUnique({
+      where: {
+        email: SIMULATED_USER_EMAIL,
+      },
+    });
 
-  // Por enquanto, apenas retornamos nosso usuário simulado:
-  return {
-    user: simulatedUser,
-  };
+    if (!user) {
+      console.error(
+        `[Auth Simulado] ERRO: O usuário com e-mail "${SIMULATED_USER_EMAIL}" não foi encontrado no banco.`,
+      );
+      console.error('Execute "npx prisma db seed" para popular o banco.');
+      return null;
+    }
+
+    // Valida que o usuário tem os dados mínimos para uma sessão
+    if (!user.name || !user.email || !user.role) {
+      console.error(
+        `[Auth Simulado] ERRO: O usuário "${SIMULATED_USER_EMAIL}" está com dados incompletos no banco.`,
+      );
+      return null;
+    }
+
+    // Monta a sessão do usuário com os tipos corretos
+    const sessionUser: UserSession = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role, // O tipo 'Role' já é o enum do Prisma
+      areaId: user.areaId, // string | null
+      photoUrl: user.photoUrl, // string | null
+    };
+
+    return {
+      user: sessionUser,
+    };
+  } catch (error) {
+    console.error('[Auth Simulado] Falha ao buscar usuário da sessão:', error);
+    return null;
+  }
 }
