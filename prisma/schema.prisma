@@ -39,7 +39,7 @@ model User {
   email     String    @unique // E-mail para login
   name      String    // Nome do usuário
   photoUrl  String?   // URL para a foto de perfil do usuário
-  // passwordHash String  // Em produção, armazenaríamos o hash da senha
+  passwordHash String  // Em produção, armazenaríamos o hash da senha
   role      Role      @default(COMMON) // Por padrão, todo novo usuário é COMUM
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
