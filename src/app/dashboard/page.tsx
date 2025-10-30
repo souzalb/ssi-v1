@@ -26,17 +26,13 @@ const StatusBadge: React.FC<{ status: Status }> = ({ status }) => {
     OPEN: 'bg-blue-100 text-blue-800',
     ASSIGNED: 'bg-yellow-100 text-yellow-800',
     IN_PROGRESS: 'bg-indigo-100 text-indigo-800',
-    ON_HOLD: 'bg-gray-100 text-gray-800',
-    RESOLVED: 'bg-green-100 text-green-800',
-    CLOSED: 'bg-gray-400 text-gray-900',
+    CLOSED: 'bg-green-100 text-green-800', // Mapeado de RESOLVED
     CANCELLED: 'bg-red-100 text-red-800',
   };
   const statusText: Record<Status, string> = {
     OPEN: 'Aberto',
     ASSIGNED: 'Atribuído',
     IN_PROGRESS: 'Em Progresso',
-    ON_HOLD: 'Aguardando',
-    RESOLVED: 'Resolvido',
     CLOSED: 'Fechado',
     CANCELLED: 'Cancelado',
   };
@@ -184,24 +180,15 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {tickets
-            .filter(
-              (t) =>
-                t.status !== 'OPEN' &&
-                t.status !== 'RESOLVED' &&
-                t.status !== 'CLOSED',
-            )
+            .filter((t) => t.status !== 'OPEN' && t.status !== 'CLOSED')
             .map((ticket) => (
               <TicketCard key={ticket.id} ticket={ticket} />
             ))}
         </div>
 
         {/* Mensagem se não houver chamados em andamento */}
-        {tickets.filter(
-          (t) =>
-            t.status !== 'OPEN' &&
-            t.status !== 'RESOLVED' &&
-            t.status !== 'CLOSED',
-        ).length === 0 && (
+        {tickets.filter((t) => t.status !== 'OPEN' && t.status !== 'CLOSED')
+          .length === 0 && (
           <div className="rounded-lg bg-white p-6 text-center text-gray-500 shadow-sm">
             Nenhum chamado em andamento.
           </div>

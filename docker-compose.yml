@@ -1,0 +1,41 @@
+# A linha 'version' foi removida por ser obsoleta
+services:
+  # --- Serviço 1: A Aplicação Next.js ---
+  app:
+    # Constrói a imagem usando o Dockerfile na pasta atual
+    build: .
+    # Reinicia a app se ela falhar
+    restart: always
+    # Mapeia a porta 3000 do contentor para a porta 3000 da sua máquina
+    ports:
+      - '3000:3000'
+    # Define as variáveis de ambiente que a app precisa
+    environment:
+      # IMPORTANTE: A app liga-se ao banco usando o nome do serviço 'db'
+      DATABASE_URL: 'postgresql://admin:admin123@db:5432/ssi'
+    # Garante que o serviço 'db' esteja pronto antes de iniciar a 'app'
+    depends_on:
+      - db
+
+  # --- Serviço 2: O Banco de Dados PostgreSQL ---
+  db:
+    # Usa a imagem oficial do PostgreSQL
+    image: postgres:15
+    restart: always
+    # Define as credenciais do banco de dados
+    # Mude 'admin' e 'admin123' se desejar
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: ssi
+    # Mapeia a porta 5432 do contentor para a porta 5433 da sua máquina
+    # (Usamos 5433 para não conflitar com um Postgres local que possa ter)
+    ports:
+      - '5433:5432'
+    # Garante que os dados do banco sobrevivam se o contentor parar
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+# Define o volume nomeado para persistir os dados do banco
+volumes:
+  postgres_data:
