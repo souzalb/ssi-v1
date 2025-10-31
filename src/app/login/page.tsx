@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Form, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signIn } from 'next-auth/react'; // Importa o signIn do client-side
@@ -22,6 +22,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  Form,
 } from '../_components/ui/form';
 import { Input } from '../_components/ui/input';
 
@@ -136,17 +137,6 @@ export default function LoginPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex justify-center text-sm">
-          <p>
-            Não tem uma conta?{' '}
-            <Link
-              href="/register"
-              className="font-semibold text-blue-600 hover:underline"
-            >
-              Registre-se
-            </Link>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );

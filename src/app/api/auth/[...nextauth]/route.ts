@@ -55,6 +55,7 @@ export const authOptions: NextAuthOptions = {
               name: user.name,
               email: user.email,
               role: user.role,
+              areaId: user.areaId,
             };
           }
         }
@@ -88,6 +89,7 @@ export const authOptions: NextAuthOptions = {
         // Estamos "injetando" o ID e a Role no token
         token.id = user.id;
         token.role = (user as User).role; // Cast para o tipo do Prisma/NextAuth
+        token.areaId = (user as User).areaId;
       }
       return token;
     },
@@ -104,6 +106,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         session.user.role = token.role as any; // Use 'as Role' se importado
+        session.user.areaId = token.areaId as string | null;
       }
       return session;
     },

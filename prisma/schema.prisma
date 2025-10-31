@@ -35,7 +35,7 @@ enum Priority {
 }
 
 enum AreaName {
-  IT
+  TI
   BUILDING
   ELECTRICAL
 }
@@ -59,6 +59,7 @@ model User {
   assigned     Ticket[]  @relation("TicketTechnician") // Chamados para atender
   comments     Comment[]
 
+  @@index([areaId])
   @@map("users")
 }
 
@@ -102,6 +103,9 @@ model Ticket {
 
   comments Comment[]
 
+  @@index([areaId])       
+  @@index([requesterId])  
+  @@index([technicianId])
   @@map("tickets")
 }
 
@@ -121,5 +125,8 @@ model Comment {
   areaId String
   area   Area   @relation(fields: [areaId], references: [id])
 
+  @@index([ticketId])
+  @@index([userId])   
+  @@index([areaId])
   @@map("comments")
 }
