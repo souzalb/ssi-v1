@@ -1,19 +1,19 @@
-// app/dashboard/page.tsx
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Ajuste o caminho
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import { Prisma, Role } from '@prisma/client';
-import Link from 'next/link';
-import db from '../_lib/prisma';
-import { Button } from '../_components/ui/button';
+import { Prisma, Role, Status } from '@prisma/client';
 
+import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react'; // (Rode: npm install lucide-react)
+import db from '../../_lib/prisma';
+import { Button } from '../../_components/ui/button';
+import Link from 'next/link';
 import {
   Card,
+  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
-} from '../_components/ui/card';
+} from '../../_components/ui/card';
 import {
   TableHeader,
   TableRow,
@@ -21,22 +21,25 @@ import {
   TableBody,
   TableCell,
   Table,
-} from '../_components/ui/table';
-import { Badge } from '../_components/ui/badge';
+} from '../../_components/ui/table';
+import { Badge } from '../../_components/ui/badge';
 
-// 1. O Componente de Página (Async Server Component)
+// Tipo para os chamados (incluindo o solicitante)
+type TicketWithRequester = Prisma.TicketGetPayload<{
+  include: { requester: { select: { name: true } } };
+}>;
+
+// 2. O Componente de Página (Async Server Component)
 export default async function DashboardPage() {
-  // 2. Buscar a sessão no servidor
+  // 3. Buscar a sessão
   const session = await getServerSession(authOptions);
-
-  // O middleware já deve ter protegido, mas é uma boa prática
   if (!session || !session.user) {
     redirect('/login');
   }
 
   const { id, role, name, areaId } = session.user;
 
-  // 3. Definir a Cláusula 'where' do Prisma com base na Role (RBAC)
+  // 4. Definir a Cláusula 'where' do RBAC (Role-Based Access Control)
   let where: Prisma.TicketWhereInput = {};
 
   if (role === Role.COMMON) {
@@ -48,29 +51,61 @@ export default async function DashboardPage() {
   } else if (role === Role.MANAGER) {
     // Gerente vê todos os chamados da sua área
     if (!areaId) {
-      // Caso de borda: Gerente sem área
-      where = { id: 'impossivel' }; // Retorna array vazio
+      where = { id: 'impossivel' }; // Retorna array vazio se gerente não tiver área
+    } else {
+      where = { areaId: areaId as string };
     }
-    where = { areaId: areaId as string };
-  } else if (role === Role.SUPER_ADMIN) {
-    // Super Admin vê tudo (sem 'where' clause)
   }
+  // (Super Admin não tem 'where', vê tudo)
 
-  // 4. Buscar os dados
-  const tickets = await db.ticket.findMany({
+  // --- 5. BUSCA DE DADOS OTIMIZADA (Promise.all) ---
+  // Vamos buscar a lista de chamados E as estatísticas em paralelo
+
+  // Query 1: A lista de chamados
+  const ticketsQuery = db.ticket.findMany({
     where,
     include: {
       requester: {
-        select: { name: true }, // Inclui o nome do solicitante
+        select: { name: true },
       },
     },
     orderBy: {
       createdAt: 'desc',
     },
-    take: 50, // Limita para não sobrecarregar
+    take: 50,
   });
 
-  // 5. O JSX
+  // Query 2: As estatísticas (usando groupBy)
+  const statsQuery = db.ticket.groupBy({
+    by: ['status'],
+    _count: {
+      _all: true,
+    },
+    where: where, // Usa o MESMO 'where' do RBAC
+  });
+
+  // Executa ambas as queries ao mesmo tempo
+  const [tickets, stats] = await Promise.all([ticketsQuery, statsQuery]);
+
+  // --- 6. Formatar os dados das Estatísticas ---
+  // Inicializa o objeto com todos os status
+  const formattedStats = {
+    [Status.OPEN]: 0,
+    [Status.ASSIGNED]: 0,
+    [Status.IN_PROGRESS]: 0,
+    [Status.ON_HOLD]: 0,
+    [Status.RESOLVED]: 0,
+    [Status.CLOSED]: 0,
+    [Status.CANCELLED]: 0,
+  };
+
+  let totalTickets = 0;
+  for (const group of stats) {
+    formattedStats[group.status] = group._count._all;
+    totalTickets += group._count._all;
+  }
+
+  // --- 7. O JSX ---
   return (
     <div className="p-8">
       <header className="mb-6 flex items-center justify-between">
@@ -85,8 +120,31 @@ export default async function DashboardPage() {
         </Button>
       </header>
 
-      {/* TODO: Adicionar Cards de Estatísticas aqui (ex: Chamados Abertos, etc.) */}
+      {/* --- 8. Grid de Estatísticas --- */}
+      <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total de Chamados"
+          value={totalTickets}
+          icon={<Ticket className="text-muted-foreground h-4 w-4" />}
+        />
+        <StatCard
+          title="Chamados Abertos"
+          value={formattedStats.OPEN}
+          icon={<FolderKanban className="text-muted-foreground h-4 w-4" />}
+        />
+        <StatCard
+          title="Em Andamento"
+          value={formattedStats.IN_PROGRESS + formattedStats.ASSIGNED}
+          icon={<Clock className="text-muted-foreground h-4 w-4" />}
+        />
+        <StatCard
+          title="Chamados Resolvidos"
+          value={formattedStats.RESOLVED}
+          icon={<CheckCircle className="text-muted-foreground h-4 w-4" />}
+        />
+      </div>
 
+      {/* --- 9. Tabela de Chamados --- */}
       <Card>
         <CardHeader>
           <CardTitle>Meus Chamados</CardTitle>
@@ -97,7 +155,6 @@ export default async function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* 6. A Tabela de Chamados */}
           <Table>
             <TableHeader>
               <TableRow>
@@ -145,5 +202,28 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// --- 10. Componente Auxiliar para os Cards ---
+function StatCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon}
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+      </CardContent>
+    </Card>
   );
 }

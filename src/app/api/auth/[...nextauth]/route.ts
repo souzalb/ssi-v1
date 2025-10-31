@@ -56,6 +56,7 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               role: user.role,
               areaId: user.areaId,
+              photoUrl: user.photoUrl,
             };
           }
         }
@@ -90,6 +91,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as User).role; // Cast para o tipo do Prisma/NextAuth
         token.areaId = (user as User).areaId;
+        token.photoUrl = (user as User).photoUrl;
       }
       return token;
     },
@@ -107,6 +109,7 @@ export const authOptions: NextAuthOptions = {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         session.user.role = token.role as any; // Use 'as Role' se importado
         session.user.areaId = token.areaId as string | null;
+        session.user.photoUrl = token.photoUrl as string | null;
       }
       return session;
     },
