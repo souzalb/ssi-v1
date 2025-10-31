@@ -10,9 +10,8 @@ services:
     ports:
       - '3000:3000'
     # Define as variáveis de ambiente que a app precisa
-    environment:
-      # IMPORTANTE: A app liga-se ao banco usando o nome do serviço 'db'
-      DATABASE_URL: 'postgresql://admin:admin123@db:5432/ssi'
+    env_file:
+      - .env.docker
     # Garante que o serviço 'db' esteja pronto antes de iniciar a 'app'
     depends_on:
       - db

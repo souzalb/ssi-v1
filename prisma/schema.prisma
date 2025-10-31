@@ -1,131 +1,125 @@
-// 1. Configuração do Provedor de Dados
-// Estamos dizendo ao Prisma para usar 'postgresql' e que a URL
-// de conexão virá de uma variável de ambiente.
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
-// 2. Configuração do Gerador de Cliente
-// Isso diz ao Prisma para gerar o Cliente Prisma (nosso código de acesso ao BD)
-// com base nos modelos abaixo.
 generator client {
   provider = "prisma-client-js"
 }
 
-// --- NÍVEIS DE USUÁRIO E ÁREAS ---
+// --- ENUMS ---
 
-// Enum para os níveis de permissão.
 enum Role {
-  COMMON      // Usuário comum
-  TECHNICIAN  // Técnico de manutenção
-  MANAGER     // Gestor de área
-  SUPER_ADMIN // Administrador geral
+  COMMON
+  TECHNICIAN
+  MANAGER
+  SUPER_ADMIN
 }
 
-// Enum para as Áreas de Manutenção.
+enum Status {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  ON_HOLD // Ex: Aguardando peça
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 enum AreaName {
-  TI
-  BUILDING    // Predial
-  ELECTRICAL  // Elétrica
+  IT
+  BUILDING
+  ELECTRICAL
 }
 
-// --- MODELOS DE DADOS (Nossas Tabelas) ---
+// --- MODELOS PRINCIPAIS ---
 
-// Modelo de Usuário
-// Centraliza todos os perfis. O "role" define o que ele pode ver.
 model User {
-  id        String    @id @default(cuid()) // ID único
-  email     String    @unique // E-mail para login
-  name      String    // Nome do usuário
-  photoUrl  String?   // URL para a foto de perfil do usuário
-  passwordHash String  // Em produção, armazenaríamos o hash da senha
-  role      Role      @default(COMMON) // Por padrão, todo novo usuário é COMUM
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id String @id @default(cuid()) // <-- CORREÇÃO: uuid() mudou para cuid()
 
-  // --- Relacionamentos do Usuário ---
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         Role      @default(COMMON)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  areaId       String?
+  photoUrl     String?
+  // Relacionamentos
+  area         Area?     @relation(fields: [areaId], references: [id])
+  tickets      Ticket[]  @relation("TicketRequester") // Chamados que abriu
+  assigned     Ticket[]  @relation("TicketTechnician") // Chamados para atender
+  comments     Comment[]
 
-  // 1. A qual área este usuário pertence (se for Técnico ou Gestor)?
-  areaId String? // O '?' indica que é opcional (Usuário COMUM não tem área)
-  area   Area?   @relation(fields: [areaId], references: [id])
-
-  // 2. Chamados que este usuário SOLICITOU
-  requestedTickets Ticket[] @relation("Requester")
-
-  // 3. Chamados que foram ATRIBUÍDOS a este usuário (se for Técnico)
-  assignedTickets Ticket[] @relation("Technician")
-
-  // 4. Comentários que este usuário fez
-  comments Comment[]
+  @@map("users")
 }
 
-// Modelo da Área de Manutenção
-// (TI, Predial, Elétrica)
 model Area {
   id   String   @id @default(cuid())
-  name AreaName @unique // Garante que só exista uma área "TI"
-  
-  // --- Relacionamentos da Área ---
-  
-  // 1. Quem são os Técnicos e Gestores desta área?
-  users User[]
+  name AreaName @unique
 
-  // 2. Quais chamados pertencem a esta área?
-  tickets Ticket[]
+  // Relacionamentos
+  users    User[]
+  tickets  Ticket[]
+  comments Comment[]
+
+  @@map("areas")
 }
 
-// Modelo do Chamado (Ticket)
-// Esta é a entidade principal do sistema.
 model Ticket {
-  id          String   @id @default(cuid())
-  title       String   // Título do chamado
-  description String
-  status      String   @default("OPEN")     // Ex: OPEN, ASSIGNED, IN_PROGRESS, DONE
-  priority    String   @default("LOW")   // Ex: LOW, MEDIUM, HIGH
-  
-  // Campos de detalhe do equipamento (Novos)
-  location    String  // Ambiente/Localização (ex: "Andar 2, Sala 10B")
-  equipment   String  // Equipamento (ex: "Impressora", "Ar Condicionado")
-  model       String  // Modelo (ex: "HP LaserJet Pro 400")
-  assetTag    String  // Número de Patrimônio (ex: "12345-BR")
+  id     String @id @default(cuid())
+  title  String
+  status Status @default(OPEN)
 
+  // Detalhes do chamado (obrigatórios)
+  description String
+  location    String // Ex: "Sala 301, Bloco B"
+  equipment   String // Ex: "Ar Condicionado"
+  model       String // Ex: "Samsung Wind-Free"
+  assetTag    String // Ex: "N/P 123456"
+
+  priority  Priority @default(MEDIUM)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // --- Relacionamentos do Chamado ---
-
-  // 1. A qual área este chamado pertence?
+  // Chaves Estrangeiras e Relacionamentos
   areaId String
   area   Area   @relation(fields: [areaId], references: [id])
 
-  // 2. Quem criou este chamado (O Solicitante)?
   requesterId String
-  requester   User   @relation("Requester", fields: [requesterId], references: [id])
+  requester   User   @relation("TicketRequester", fields: [requesterId], references: [id])
 
-  // 3. Quem está atendendo este chamado (O Técnico)?
-  technicianId String? // O '?' indica que é opcional (pode estar não atribuído)
-  technician   User?   @relation("Technician", fields: [technicianId], references: [id])
+  technicianId String?
+  technician   User?   @relation("TicketTechnician", fields: [technicianId], references: [id])
 
-  // 4. Quais são os comentários deste chamado?
   comments Comment[]
+
+  @@map("tickets")
 }
 
-// Modelo de Comentário
 model Comment {
   id         String   @id @default(cuid())
-  text       String   // O conteúdo do comentário
-  isInternal Boolean  @default(false) // Flag de visibilidade (Técnico/Gestor vs. Usuário)
+  text       String
   createdAt  DateTime @default(now())
+  isInternal Boolean  @default(false) // Comentário interno (Técnico <-> Gestor)
 
-  // --- Relacionamentos do Comentário ---
-
-  // 1. A qual chamado este comentário pertence?
+  // Relacionamentos
   ticketId String
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade) // Se deletar o chamado, deleta os comentários
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
 
-  // 2. Quem escreveu este comentário?
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id])
+
+  @@map("comments")
 }
-

@@ -1,27 +1,23 @@
-import { NextResponse } from 'next/server';
-// Use o caminho correto para seus helpers
 import db from '@/app/_lib/prisma';
+import { NextResponse } from 'next/server';
 
-/**
- * @api {get} /api/areas
- * @description Rota para buscar todas as Áreas de Manutenção
- * (ex: TI, Predial, Elétrica) para preencher menus dropdown.
- */
 export async function GET() {
   try {
     const areas = await db.area.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
       orderBy: {
-        name: 'asc', // Ordena por nome (A-Z)
+        name: 'asc',
       },
     });
 
     return NextResponse.json(areas);
   } catch (error) {
-    console.error('Erro ao buscar áreas:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : 'Erro interno desconhecido';
+    console.error('[API_AREAS_GET_ERROR]', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor', message: errorMessage },
+      { error: 'Erro interno do servidor ao buscar áreas' },
       { status: 500 },
     );
   }
