@@ -1,36 +1,71 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server'; // Importe NextRequest
+import { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { Role } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Ajuste o caminho
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import db from '@/app/_lib/prisma';
 
-// 1. Schema de Validação (Agora para o Admin)
-// O Admin pode (e deve) definir a Role.
+// --- Schema de Criação (POST) - (Sem alterações) ---
 const userCreateSchema = z.object({
   email: z.string().email({ message: 'Email inválido' }),
   name: z.string().min(3, { message: 'Nome deve ter pelo menos 3 caracteres' }),
   password: z
     .string()
     .min(8, { message: 'Senha deve ter pelo menos 8 caracteres' }),
-  role: z.nativeEnum(Role), // <-- O Admin define a Role
+  role: z.nativeEnum(Role),
   areaId: z.string().cuid({ message: 'ID da Área inválido' }).optional(),
 });
 
-// --- NOVO GET HANDLER ---
-// Retorna todos os usuários (apenas para o Super Admin)
-export async function GET() {
+// --- MODIFIED GET HANDLER ---
+// Retorna usuários com base na permissão e filtros
+export async function GET(req: NextRequest) {
+  // Use NextRequest para ler a URL
   // 2.1. Validar a sessão
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== Role.SUPER_ADMIN) {
-    return NextResponse.json({ error: 'Acesso negado' }, { status: 403 }); // 403 Forbidden
+
+  // Acesso permitido para Super Admin OU Manager
+  if (
+    !session ||
+    (session.user.role !== Role.SUPER_ADMIN &&
+      session.user.role !== Role.MANAGER)
+  ) {
+    return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
+  }
+
+  // 2.2. Construção da Query (Where) com base na Role
+  const { searchParams } = new URL(req.url);
+  const roleFilter = searchParams.get('role'); // Filtro: /api/users?role=TECHNICIAN
+
+  const where: Prisma.UserWhereInput = {};
+
+  // Se for Manager, filtra pela sua própria área
+  if (session.user.role === Role.MANAGER) {
+    if (!session.user.areaId) {
+      // Manager sem área não pode ver ninguém
+      return NextResponse.json(
+        { error: 'Gestor não associado a uma área' },
+        { status: 403 },
+      );
+    }
+    where.areaId = session.user.areaId;
+  }
+
+  // Se o filtro de Role for aplicado
+  if (roleFilter) {
+    // Validação simples para garantir que a Role é válida
+    if (Object.values(Role).includes(roleFilter as Role)) {
+      where.role = roleFilter as Role;
+    } else {
+      return NextResponse.json({ error: 'Role inválida' }, { status: 400 });
+    }
   }
 
   try {
-    // 2.2. Buscar usuários no banco
+    // 2.3. Buscar usuários no banco
     const users = await db.user.findMany({
-      // Nunca retornar o hash da senha
+      where, // Aplica os filtros
       select: {
         id: true,
         email: true,
@@ -38,7 +73,7 @@ export async function GET() {
         role: true,
         areaId: true,
         area: {
-          select: { name: true }, // Inclui o nome da área
+          select: { name: true },
         },
         createdAt: true,
       },
@@ -56,19 +91,16 @@ export async function GET() {
   }
 }
 
-// --- MODIFIED POST HANDLER ---
+// --- POST HANDLER (Sem alterações) ---
 // Cria um novo usuário (apenas para o Super Admin)
 export async function POST(req: Request) {
-  // 3.1. Validar a sessão
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== Role.SUPER_ADMIN) {
-    return NextResponse.json({ error: 'Acesso negado' }, { status: 403 }); // 403 Forbidden
+    return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
   }
 
   try {
     const body = await req.json();
-
-    // 3.2. Validar o corpo da requisição (novo schema)
     const validation = userCreateSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
@@ -77,10 +109,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Agora pegamos 'role' do body
     const { email, name, password, role, areaId } = validation.data;
-
-    // 3.3. Verificar se o usuário já existe
     const existingUser = await db.user.findUnique({
       where: { email: email },
     });
@@ -88,21 +117,18 @@ export async function POST(req: Request) {
     if (existingUser) {
       return NextResponse.json(
         { error: 'Este email já está em uso' },
-        { status: 409 }, // 409 Conflict
+        { status: 409 },
       );
     }
 
-    // 3.4. Fazer o Hash da senha
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // 3.5. Criar o usuário no banco
     const newUser = await db.user.create({
       data: {
         email,
         name,
         passwordHash: hashedPassword,
         areaId: areaId,
-        role: role, // <-- Usamos a Role vinda do Admin
+        role: role,
       },
       select: {
         id: true,
@@ -114,7 +140,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(newUser, { status: 201 }); // 201 Created
+    return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
     console.error('[API_USERS_POST_ERROR]', error);
     return NextResponse.json(
