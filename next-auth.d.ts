@@ -8,12 +8,14 @@ declare module 'next-auth' {
       id: string;
       role: Role;
       areaId: string | null;
+      photoUrl: string | null;
     } & DefaultSession['user'];
   }
 
   interface User {
     role: Role;
     areaId: string | null;
+    photoUrl: string | null;
   }
 }
 
@@ -22,5 +24,6 @@ declare module 'next-auth/jwt' {
     id: string;
     role: Role;
     areaId: string | null;
+    photoUrl: string | null;
   }
 }
