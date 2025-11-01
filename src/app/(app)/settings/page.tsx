@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { ProfileForm } from './profile-form';
 import { PasswordForm } from './password-form';
 import db from '@/app/_lib/prisma';
+import { AvatarForm } from './avatar-form';
 
 // 1. Função de busca de dados (Server-side)
 // (Usamos uma função separada para manter o 'async' fora do componente)
@@ -21,7 +22,7 @@ async function getUserData() {
     select: {
       name: true,
       email: true,
-      // Passaremos 'name' e 'email' para o ProfileForm
+      photoUrl: true,
     },
   });
 
@@ -46,7 +47,7 @@ export default async function SettingsPage() {
       </header>
 
       <div className="space-y-8">
-        {/* TODO: Formulário de Avatar (Próximo passo) */}
+        <AvatarForm user={user} />
 
         {/* 4. Renderiza o formulário de perfil (Client Component) */}
         {/* Passa os dados do servidor como props */}
