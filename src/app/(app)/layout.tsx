@@ -1,4 +1,5 @@
 import { Header } from '../_components/header';
+import { AuthProvider } from './auth-provider'; // <-- 1. Importe o novo provedor
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -6,12 +7,15 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* 1. O Header é renderizado aqui */}
-      <Header />
+    // 2. "Abraçe" todo o layout com o AuthProvider
+    <AuthProvider>
+      <div className="flex min-h-screen flex-col">
+        {/* O Header (Server Component) funciona normalmente */}
+        <Header />
 
-      {/* 2. O conteúdo da página (ex: Dashboard) é renderizado abaixo */}
-      <main className="flex-1">{children}</main>
-    </div>
+        {/* O conteúdo da página (Client ou Server) é renderizado dentro do provedor */}
+        <main className="flex-1">{children}</main>
+      </div>
+    </AuthProvider>
   );
 }
