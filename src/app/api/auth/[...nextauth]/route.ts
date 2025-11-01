@@ -84,38 +84,55 @@ export const authOptions: NextAuthOptions = {
      * Chamado quando um JWT é criado (login) ou atualizado.
      * 'user' só está disponível no login.
      */
-    async jwt({ token, user }) {
-      // O 'user' aqui é o objeto retornado pelo 'authorize'
+    async jwt({ token, user, trigger, session }) {
+      // 1. Na hora do Login (trigger "signIn")
       if (user) {
-        // Estamos "injetando" o ID e a Role no token
+        // 'user' é o objeto retornado pelo 'authorize'
         token.id = user.id;
-        token.role = (user as User).role; // Cast para o tipo do Prisma/NextAuth
+        token.role = (user as User).role;
         token.areaId = (user as User).areaId;
         token.photoUrl = (user as User).photoUrl;
+        // 'name' e 'email' já são adicionados ao token por padrão
       }
+
+      // 2. Na hora da ATUALIZAÇÃO (trigger "update")
+      // 'session' é o payload enviado pela função update()
+      // ex: update({ name: "Novo Nome" })
+      if (trigger === 'update' && session) {
+        // Mescla o payload da atualização (session) com o token existente
+        return { ...token, ...session };
+      }
+
       return token;
     },
 
     /**
      * Callback 'session'
-     * Chamado quando a sessão é acessada.
-     * Recebe o 'token' (processado pelo 'jwt' callback).
+     * Modificado para repassar o 'name' atualizado do token
      */
     async session({ session, token }) {
-      // Passamos os dados do token (id e role) para a sessão
-      // que será exposta ao cliente
       if (token) {
+        // Passa os dados customizados do token para a sessão
         session.user.id = token.id as string;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        session.user.role = token.role as any; // Use 'as Role' se importado
+        session.user.role = token.role as any;
         session.user.areaId = token.areaId as string | null;
         session.user.photoUrl = token.photoUrl as string | null;
+
+        // --- ATUALIZAÇÃO IMPORTANTE ---
+        // Precisamos repassar manualmente os campos
+        // que podem ter sido atualizados no token pelo callback 'jwt'
+        if (token.name) {
+          session.user.name = token.name;
+        }
+        if (token.email) {
+          session.user.email = token.email;
+        }
       }
       return session;
     },
   },
 };
-
 // 5. Exportação dos Handlers
 const handler = NextAuth(authOptions);
 
