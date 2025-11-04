@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 
 import { z } from 'zod';
-import { Priority } from '@prisma/client';
+import { Priority, Role } from '@prisma/client'; // Importa Role
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import db from '@/app/_lib/prisma';
 
-// --- 1. NOVO: Schema para um Anexo (espelha a resposta da API de upload) ---
+import { NewTicketEmail } from '@/emails/new-ticket-email';
+// O React é necessário para o Resend renderizar o template
+import React from 'react';
+import db from '@/app/_lib/prisma';
+import { fromEmail, resend } from '@/app/_lib/resend';
+
+// --- 1. Schema para um Anexo (espelha a resposta da API de upload) ---
 const attachmentSchema = z.object({
   url: z.string().url('URL do anexo inválida'),
   filename: z.string().min(1, 'Nome do arquivo do anexo inválido'),
@@ -14,7 +19,7 @@ const attachmentSchema = z.object({
   size: z.number().int().positive().optional(),
 });
 
-// --- 2. MODIFICADO: Schema de Criação do Chamado ---
+// --- 2. Schema de Criação do Chamado (agora com anexos) ---
 const ticketCreateSchema = z.object({
   title: z.string().min(5, 'Título deve ter pelo menos 5 caracteres'),
   description: z
@@ -27,7 +32,7 @@ const ticketCreateSchema = z.object({
   priority: z.nativeEnum(Priority),
   areaId: z.string().cuid('ID da Área inválido'),
 
-  // --- NOVO CAMPO: Aceita um array de anexos ---
+  // Aceita um array de anexos
   attachments: z.array(attachmentSchema).optional(),
 });
 
@@ -73,8 +78,7 @@ export async function POST(req: Request) {
           connect: { id: areaId },
         },
 
-        // --- 3.5. NOVO: Bloco de criação de anexos ---
-        // Cria os anexos "aninhados" dentro do ticket
+        // Bloco de criação de anexos
         ...(attachments &&
           attachments.length > 0 && {
             attachments: {
@@ -87,14 +91,74 @@ export async function POST(req: Request) {
             },
           }),
       },
-      // Retorna o novo chamado com os anexos
+      // Precisamos incluir os dados para o email
       include: {
-        requester: { select: { name: true } },
-        area: { select: { name: true } },
-        attachments: true, // <-- Inclui os anexos na resposta
+        requester: { select: { name: true } }, // Nome do solicitante
+        area: { select: { name: true } }, // Nome da área
+        attachments: true,
       },
     });
 
+    // --- 4. NOVO: Lógica de Envio de Email (Fire-and-Forget) ---
+    try {
+      // 4.1. Encontrar o(s) gestor(es) da área
+      const managers = await db.user.findMany({
+        where: {
+          role: Role.MANAGER,
+          areaId: newTicket.areaId, // A área do ticket recém-criado
+        },
+        select: {
+          email: true,
+          name: true,
+        },
+      });
+
+      if (
+        managers.length > 0 &&
+        fromEmail &&
+        process.env.NEXT_PUBLIC_BASE_URL
+      ) {
+        // 4.2. Preparar os dados do email
+        const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/${newTicket.id}`;
+
+        // Envia para cada gestor
+        for (const manager of managers) {
+          if (!manager.email || !manager.name) continue;
+
+          await resend.emails.send({
+            from: fromEmail,
+            to: manager.email,
+            subject: `Novo Chamado #${newTicket.id}: ${newTicket.title}`,
+
+            // Renderiza o componente React como o corpo do email
+            react: React.createElement(NewTicketEmail, {
+              managerName: manager.name,
+              requesterName: newTicket.requester.name,
+              ticketTitle: newTicket.title,
+              ticketPriority: newTicket.priority,
+              ticketUrl: ticketUrl,
+            }),
+          });
+        }
+      } else {
+        if (!fromEmail || !process.env.NEXT_PUBLIC_BASE_URL) {
+          console.warn(
+            'AVISO: EMAIL_FROM ou NEXT_PUBLIC_BASE_URL não definidos. Email não enviado.',
+          );
+        }
+        if (managers.length === 0) {
+          console.warn(
+            `Nenhum gestor encontrado para a área ${newTicket.area.name}. Email não enviado.`,
+          );
+        }
+      }
+    } catch (emailError) {
+      // Se o email falhar, o chamado já foi criado.
+      // Apenas logamos o erro, mas não falhamos a requisição.
+      console.error('[API_TICKETS_POST_EMAIL_ERROR]', emailError);
+    }
+
+    // 5. Retorna o sucesso
     return NextResponse.json(newTicket, { status: 201 });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {

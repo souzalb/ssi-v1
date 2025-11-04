@@ -387,7 +387,7 @@ export default function NewTicketPage() {
                           className="bg-muted/50 flex items-center justify-between rounded-md border p-2"
                         >
                           <div className="flex items-center gap-2 overflow-hidden">
-                            <FileIcon className="text-muted-foreground h-4 w-4 flex-shrink-0" />
+                            <FileIcon className="text-muted-foreground h-4 w-4 shrink-0" />
                             <span
                               className="truncate text-sm"
                               title={file.name}

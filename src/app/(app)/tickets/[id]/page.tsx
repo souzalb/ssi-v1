@@ -18,6 +18,7 @@ import {
 import db from '@/app/_lib/prisma';
 import { Badge } from '@/app/_components/ui/badge';
 import { TicketActions } from './ticket-actions';
+import { AttachmentList } from './attachment-list';
 
 // 1. Função de busca e validação
 async function getTicketData(ticketId: string) {
@@ -42,6 +43,14 @@ async function getTicketData(ticketId: string) {
         },
         orderBy: { createdAt: 'asc' },
       },
+
+      attachments: {
+        include: {
+          uploader: { select: { name: true } }, // Pega o nome de quem fez o upload
+        },
+        orderBy: { createdAt: 'asc' },
+      },
+      // -------------------------
     },
   });
 
@@ -145,6 +154,9 @@ export default async function TicketDetailPage({
               />
             </CardContent>
           </Card>
+
+          <AttachmentList attachments={ticket.attachments} />
+
           <Card>
             <CardHeader>
               <CardTitle>Equipamento</CardTitle>
