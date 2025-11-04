@@ -6,23 +6,26 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Priority } from '@prisma/client'; // Importa o Enum
+import { Priority } from '@prisma/client';
+
+// --- Ícones ---
+import { Loader2, File as FileIcon, Trash2 } from 'lucide-react';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/app/_components/ui/card';
-import { Button } from '@/app/_components/ui/button';
-import {
+  Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
-  Form,
 } from '@/app/_components/ui/form';
+import { Button } from '@/app/_components/ui/button';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/app/_components/ui/card';
 import { Input } from '@/app/_components/ui/input';
 import { Textarea } from '@/app/_components/ui/textarea';
 import {
@@ -39,7 +42,16 @@ type Area = {
   name: string;
 };
 
-// 1. Schema de Validação (Zod) - Deve bater com o da API
+// Tipo da resposta da nossa API de upload
+type AttachmentData = {
+  url: string;
+  filename: string;
+  fileType?: string;
+  size?: number;
+};
+
+// 1. Schema de Validação (Zod)
+// (Não incluímos 'attachments' aqui, pois são tratados fora do react-hook-form)
 const formSchema = z.object({
   title: z.string().min(5, 'Título deve ter pelo menos 5 caracteres'),
   description: z
@@ -50,12 +62,15 @@ const formSchema = z.object({
   model: z.string().min(3, 'Modelo é obrigatório'),
   assetTag: z.string().min(3, 'Patrimônio (ou N/P) é obrigatório'),
   priority: z.nativeEnum(Priority),
-  areaId: z.string().min(1, 'Selecione uma área'),
+  areaId: z.string({ error: 'Selecione uma área' }),
 });
 
 export default function NewTicketPage() {
   const router = useRouter();
-  const [areas, setAreas] = useState<Area[]>([]); // Estado para as áreas
+  const [areas, setAreas] = useState<Area[]>([]);
+
+  // --- Estados para Upload ---
+  const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // 2. Setup do Formulário
@@ -88,34 +103,93 @@ export default function NewTicketPage() {
     fetchAreas();
   }, []);
 
-  // 4. Handler de Submissão (POST /api/tickets)
+  // 4. Função para lidar com a seleção de arquivos
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      // Adiciona os novos arquivos aos já existentes
+      setFilesToUpload((prevFiles) => [...prevFiles, ...newFiles]);
+      // Limpa o input para permitir selecionar o mesmo arquivo novamente
+      e.target.value = '';
+    }
+  };
+
+  // 5. Função para remover um arquivo da lista
+  const removeFile = (indexToRemove: number) => {
+    setFilesToUpload((prevFiles) =>
+      prevFiles.filter((_, index) => index !== indexToRemove),
+    );
+  };
+
+  // 6. Função de Upload (chamada pelo onSubmit)
+  // Faz o upload de um único arquivo para a nossa API
+  const uploadFile = async (file: File): Promise<AttachmentData> => {
+    const response = await fetch('/api/attachments/upload', {
+      method: 'POST',
+      headers: {
+        'X-Vercel-Blob-Filename': file.name,
+      },
+      body: file,
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Falha no upload do ${file.name}`);
+    }
+    return response.json();
+  };
+
+  // 7. Handler de Submissão (Orquestrador)
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    let uploadedAttachments: AttachmentData[] = [];
+
     try {
+      // --- ETAPA 1: Fazer o upload dos arquivos ---
+      if (filesToUpload.length > 0) {
+        toast.info('Enviando anexos...', { id: 'upload-toast' });
+
+        // Cria um array de 'promessas' de upload
+        const uploadPromises = filesToUpload.map((file) => uploadFile(file));
+
+        // Espera todas as promessas terminarem
+        uploadedAttachments = await Promise.all(uploadPromises);
+
+        toast.success('Anexos enviados!', { id: 'upload-toast' });
+      }
+
+      // --- ETAPA 2: Submeter o formulário do chamado ---
+      toast.info('Criando chamado...', { id: 'ticket-toast' });
       const response = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values, // Dados do formulário (título, desc, etc.)
+          attachments: uploadedAttachments, // Array com os dados dos anexos
+        }),
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || 'Falha ao criar o chamado');
       }
 
-      // 5. Sucesso
+      // --- ETAPA 3: Sucesso ---
       toast.success('Chamado criado!', {
-        description: `O chamado "${data.title}" foi aberto com sucesso.`,
+        id: 'ticket-toast',
+        description: `O chamado "${data.title}" foi aberto.`,
       });
-      router.push('/dashboard'); // Redireciona para o dashboard
+      router.push('/dashboard');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error('Erro', {
         description: error.message,
       });
     } finally {
-      setIsLoading(false);
+      // Só definimos como 'false' em caso de erro.
+      // Em caso de sucesso, o redirecionamento já cuida disso.
+      if (!router.push) {
+        setIsLoading(false);
+      }
     }
   }
 
@@ -285,16 +359,73 @@ export default function NewTicketPage() {
                 )}
               />
 
-              {/* --- Linha 5: Botões --- */}
+              {/* --- 8. Seção de Anexos --- */}
+              <div className="space-y-4">
+                <FormItem>
+                  <FormLabel>Anexos</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      multiple // Permite selecionar vários arquivos
+                      onChange={handleFileChange}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+
+                {/* Lista de arquivos selecionados */}
+                {filesToUpload.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      Arquivos a serem enviados:
+                    </p>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                      {filesToUpload.map((file, index) => (
+                        <div
+                          key={index}
+                          className="bg-muted/50 flex items-center justify-between rounded-md border p-2"
+                        >
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <FileIcon className="text-muted-foreground h-4 w-4 flex-shrink-0" />
+                            <span
+                              className="truncate text-sm"
+                              title={file.name}
+                            >
+                              {file.name}
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => removeFile(index)}
+                            disabled={isLoading}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* --- 9. Botões --- */}
               <div className="flex justify-end gap-4">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => router.push('/dashboard')}
+                  disabled={isLoading} // Desativa se estiver enviando
                 >
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isLoading}>
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {isLoading ? 'Enviando...' : 'Abrir Chamado'}
                 </Button>
               </div>

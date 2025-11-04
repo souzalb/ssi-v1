@@ -58,6 +58,7 @@ model User {
   tickets      Ticket[]  @relation("TicketRequester") // Chamados que abriu
   assigned     Ticket[]  @relation("TicketTechnician") // Chamados para atender
   comments     Comment[]
+  uploads  Attachment[]
 
   @@index([areaId])
   @@map("users")
@@ -73,6 +74,27 @@ model Area {
   comments Comment[]
 
   @@map("areas")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  filename  String   // Nome original do arquivo (ex: "screenshot.png")
+  url       String   // URL do Vercel Blob
+  fileType  String?  // ex: "image/png"
+  size      Int?     // Tamanho em bytes
+  createdAt DateTime @default(now())
+
+  // Relacionamento com o Chamado
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  // Relacionamento com quem fez o upload
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  @@index([ticketId])
+  @@index([uploaderId])
+  @@map("attachments")
 }
 
 model Ticket {
@@ -102,6 +124,7 @@ model Ticket {
   technician   User?   @relation("TicketTechnician", fields: [technicianId], references: [id])
 
   comments Comment[]
+  attachments Attachment[]
 
   @@index([areaId])       
   @@index([requesterId])  
