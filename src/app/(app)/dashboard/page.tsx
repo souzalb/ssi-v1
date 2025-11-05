@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import { Prisma, Role, Status } from '@prisma/client';
+import { Priority, Prisma, Role, Status } from '@prisma/client';
 import db from '@/app/_lib/prisma'; // (Usando o seu caminho de importação)
 import Link from 'next/link';
 
@@ -26,6 +26,7 @@ import { Badge } from '@/app/_components/ui/badge';
 import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react';
 import { StatusChart } from './status-chart'; // (Importando o Gráfico)
 import { StatCard } from '@/app/_components/stat-card';
+import { PriorityChart } from './priority-chart';
 
 // Tipo para os chamados
 type TicketWithRequester = Prisma.TicketGetPayload<{
@@ -81,8 +82,17 @@ export default async function DashboardPage() {
     where: where, // Usa o MESMO 'where' do RBAC
   });
 
-  // Executa ambas as queries ao mesmo tempo
-  const [tickets, stats] = await Promise.all([ticketsQuery, statsQuery]);
+  const priorityStatsQuery = db.ticket.groupBy({
+    by: ['priority'],
+    _count: { _all: true },
+    where: where, // Usa o mesmo 'where' do RBAC
+  });
+
+  const [tickets, stats, priorityStats] = await Promise.all([
+    ticketsQuery,
+    statsQuery,
+    priorityStatsQuery, // Adiciona a nova query
+  ]);
 
   // --- 4. Formatar os dados das Estatísticas ---
   const formattedStats = {
@@ -99,6 +109,19 @@ export default async function DashboardPage() {
   for (const group of stats) {
     formattedStats[group.status] = group._count._all;
     totalTickets += group._count._all;
+  }
+
+  const formattedPriorityStats = Object.values(Priority).map((p) => ({
+    name: p,
+    total: 0,
+  }));
+
+  for (const group of priorityStats) {
+    // Encontra o item correspondente no array
+    const item = formattedPriorityStats.find((p) => p.name === group.priority);
+    if (item) {
+      item.total = group._count._all;
+    }
   }
 
   // --- 5. O JSX (COM NOVO LAYOUT) ---
@@ -146,6 +169,8 @@ export default async function DashboardPage() {
         <div className="lg:col-span-2">
           {/* Passa os dados das estatísticas para o Client Component */}
           <StatusChart data={formattedStats} />
+
+          <PriorityChart data={formattedPriorityStats} />
         </div>
 
         {/* Coluna da Direita (Chamados Recentes) */}
