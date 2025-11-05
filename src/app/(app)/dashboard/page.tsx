@@ -2,36 +2,38 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { Prisma, Role, Status } from '@prisma/client';
-
-import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react'; // (Rode: npm install lucide-react)
-import db from '../../_lib/prisma';
-import { Button } from '../../_components/ui/button';
+import db from '@/app/_lib/prisma'; // (Usando o seu caminho de importação)
 import Link from 'next/link';
+
+// --- Componentes ---
+import { Button } from '@/app/_components/ui/button'; // (Usando o seu caminho)
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '../../_components/ui/card';
+} from '@/app/_components/ui/card';
 import {
-  TableHeader,
-  TableRow,
-  TableHead,
+  Table,
   TableBody,
   TableCell,
-  Table,
-} from '../../_components/ui/table';
-import { Badge } from '../../_components/ui/badge';
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/app/_components/ui/table';
+import { Badge } from '@/app/_components/ui/badge';
+import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react';
+import { StatusChart } from './status-chart'; // (Importando o Gráfico)
+import { StatCard } from '@/app/_components/stat-card';
 
-// Tipo para os chamados (incluindo o solicitante)
+// Tipo para os chamados
 type TicketWithRequester = Prisma.TicketGetPayload<{
   include: { requester: { select: { name: true } } };
 }>;
 
-// 2. O Componente de Página (Async Server Component)
 export default async function DashboardPage() {
-  // 3. Buscar a sessão
+  // 1. Obter a sessão
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
     redirect('/login');
@@ -39,29 +41,24 @@ export default async function DashboardPage() {
 
   const { id, role, name, areaId } = session.user;
 
-  // 4. Definir a Cláusula 'where' do RBAC (Role-Based Access Control)
+  // 2. Definir a Cláusula 'where' do RBAC (Role-Based Access Control)
   let where: Prisma.TicketWhereInput = {};
 
   if (role === Role.COMMON) {
-    // Usuário comum vê apenas os chamados que abriu
     where = { requesterId: id };
   } else if (role === Role.TECHNICIAN) {
-    // Técnico vê chamados atribuídos a ele
     where = { technicianId: id };
   } else if (role === Role.MANAGER) {
-    // Gerente vê todos os chamados da sua área
     if (!areaId) {
       where = { id: 'impossivel' }; // Retorna array vazio se gerente não tiver área
     } else {
       where = { areaId: areaId as string };
     }
   }
-  // (Super Admin não tem 'where', vê tudo)
 
-  // --- 5. BUSCA DE DADOS OTIMIZADA (Promise.all) ---
-  // Vamos buscar a lista de chamados E as estatísticas em paralelo
+  // --- 3. BUSCA DE DADOS OTIMIZADA (Promise.all) ---
 
-  // Query 1: A lista de chamados
+  // Query 1: A lista de chamados (agora apenas 5)
   const ticketsQuery = db.ticket.findMany({
     where,
     include: {
@@ -72,10 +69,10 @@ export default async function DashboardPage() {
     orderBy: {
       createdAt: 'desc',
     },
-    take: 50,
+    take: 5, // Apenas os 5 recentes
   });
 
-  // Query 2: As estatísticas (usando groupBy)
+  // Query 2: As estatísticas (para os Cards e Gráfico)
   const statsQuery = db.ticket.groupBy({
     by: ['status'],
     _count: {
@@ -87,8 +84,7 @@ export default async function DashboardPage() {
   // Executa ambas as queries ao mesmo tempo
   const [tickets, stats] = await Promise.all([ticketsQuery, statsQuery]);
 
-  // --- 6. Formatar os dados das Estatísticas ---
-  // Inicializa o objeto com todos os status
+  // --- 4. Formatar os dados das Estatísticas ---
   const formattedStats = {
     [Status.OPEN]: 0,
     [Status.ASSIGNED]: 0,
@@ -105,7 +101,7 @@ export default async function DashboardPage() {
     totalTickets += group._count._all;
   }
 
-  // --- 7. O JSX ---
+  // --- 5. O JSX (COM NOVO LAYOUT) ---
   return (
     <div className="p-8">
       <header className="mb-6 flex items-center justify-between">
@@ -120,7 +116,7 @@ export default async function DashboardPage() {
         </Button>
       </header>
 
-      {/* --- 8. Grid de Estatísticas --- */}
+      {/* Grid de Estatísticas (KPIs) */}
       <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total de Chamados"
@@ -144,86 +140,65 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* --- 9. Tabela de Chamados --- */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Meus Chamados</CardTitle>
-          <CardDescription>
-            {role === Role.COMMON
-              ? 'Chamados abertos por você.'
-              : 'Chamados na sua fila de gerenciamento.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Prioridade</TableHead>
-                <TableHead>Solicitante</TableHead>
-                <TableHead>Data</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tickets.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">
-                    Nenhum chamado encontrado.
-                  </TableCell>
-                </TableRow>
-              )}
-              {tickets.map((ticket) => (
-                <TableRow key={ticket.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/tickets/${ticket.id}`}
-                      className="hover:underline"
-                    >
-                      {ticket.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    {/* TODO: Criar um componente Badge de Status com cores */}
-                    <Badge variant="outline">{ticket.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {/* TODO: Criar um componente Badge de Prioridade com cores */}
-                    <Badge variant="destructive">{ticket.priority}</Badge>
-                  </TableCell>
-                  <TableCell>{ticket.requester.name}</TableCell>
-                  <TableCell>
-                    {new Date(ticket.createdAt).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+      {/* --- 6. Grid de Gráficos e Chamados Recentes --- */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Coluna da Esquerda (Gráfico) */}
+        <div className="lg:col-span-2">
+          {/* Passa os dados das estatísticas para o Client Component */}
+          <StatusChart data={formattedStats} />
+        </div>
 
-// --- 10. Componente Auxiliar para os Cards ---
-function StatCard({
-  title,
-  value,
-  icon,
-}: {
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
+        {/* Coluna da Direita (Chamados Recentes) */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Chamados Recentes</CardTitle>
+              <CardDescription>
+                Os 5 chamados mais recentes na sua fila.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tickets.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center">
+                        Nenhum chamado encontrado.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {tickets.map((ticket) => (
+                    <TableRow key={ticket.id}>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={`/tickets/${ticket.id}`}
+                          className="hover:underline"
+                        >
+                          {ticket.title}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{ticket.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="mt-4 flex justify-end">
+                <Button asChild variant="link">
+                  <Link href="/tickets">Ver todos os chamados &rarr;</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }
