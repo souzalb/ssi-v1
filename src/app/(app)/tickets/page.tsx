@@ -1,8 +1,9 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-// Os Enums são importados aqui (no Server Component)
 import { Prisma, Role, Status, Priority } from '@prisma/client';
+import Link from 'next/link';
+import { endOfDay } from 'date-fns'; // Importar 'endOfDay'
 
 // Componentes da Página
 import { TicketFilters } from './ticket-filters';
@@ -13,9 +14,18 @@ import { columns, TicketComRelacoes } from './columns';
 // Componentes (usando os seus caminhos)
 import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react';
 import db from '@/app/_lib/prisma'; // (O seu caminho para o Prisma)
+import { Card, CardContent } from '@/app/_components/ui/card';
+import {
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableCell,
+  Table,
+} from '@/app/_components/ui/table';
+import { Badge } from '@/app/_components/ui/badge';
 import { StatCard } from '@/app/_components/stat-card'; // (Ajuste este caminho se necessário)
 
-// Props que a página recebe (agora inclui 'search', 'sort', 'order')
+// Props que a página recebe (agora inclui todos os filtros)
 interface TicketsPageProps {
   searchParams: Promise<{
     status?: Status;
@@ -24,6 +34,8 @@ interface TicketsPageProps {
     search?: string;
     sort?: string;
     order?: 'asc' | 'desc';
+    startDate?: string; // (string da URL)
+    endDate?: string; // (string da URL)
   }>;
 }
 
@@ -51,10 +63,14 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   const sort = resolvedSearchParams.sort || 'createdAt'; // Padrão: createdAt
   const order = resolvedSearchParams.order || 'desc'; // Padrão: desc
 
+  // Parâmetros de Data
+  const startDate = resolvedSearchParams.startDate;
+  const endDate = resolvedSearchParams.endDate;
+
   // 1.3. Construir a Cláusula 'where' (RBAC + Filtros)
   let where: Prisma.TicketWhereInput = {};
 
-  // RBAC (igual ao dashboard)
+  // RBAC
   if (role === Role.COMMON) {
     where = { requesterId: userId };
   } else if (role === Role.TECHNICIAN) {
@@ -86,8 +102,21 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     ];
   }
 
+  // Filtro de Data
+  const createdAtFilter: Prisma.DateTimeFilter = {};
+  if (startDate) {
+    createdAtFilter.gte = new Date(startDate); // Começa no início do dia
+  }
+  if (endDate) {
+    createdAtFilter.lte = endOfDay(new Date(endDate)); // Termina no FIM do dia
+  }
+  if (startDate || endDate) {
+    where.createdAt = createdAtFilter;
+  }
+
   // 1.4. Construir a Cláusula 'orderBy'
   const orderBy: Prisma.TicketOrderByWithRelationInput = {};
+  // Mapeamento seguro para os campos que permitimos ordenar
   if (
     sort === 'id' ||
     sort === 'title' ||
@@ -115,10 +144,10 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     where,
     include: {
       requester: { select: { name: true } },
-      area: { select: { name: true } }, // Necessário para 'columns.tsx'
-      technician: { select: { name: true, photoUrl: true } }, // Necessário para 'columns.tsx'
+      area: { select: { name: true } },
+      technician: { select: { name: true, photoUrl: true } },
     },
-    orderBy: orderBy, // Aplica a ordenação
+    orderBy: orderBy,
     take: ITEMS_PER_PAGE,
     skip: skip,
   });

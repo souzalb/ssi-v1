@@ -43,6 +43,13 @@ export async function Header() {
           >
             Chamados
           </Link>
+
+          <Link
+            href="/tickets/new"
+            className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
+          >
+            Novo Chamado
+          </Link>
         </nav>
 
         {/* UserNav na Direita */}
