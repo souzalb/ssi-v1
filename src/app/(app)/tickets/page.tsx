@@ -3,7 +3,6 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 // Os Enums são importados aqui (no Server Component)
 import { Prisma, Role, Status, Priority } from '@prisma/client';
-import Link from 'next/link';
 
 // Nossos novos componentes
 import { TicketFilters } from './ticket-filters';
@@ -12,16 +11,6 @@ import { PaginationControls } from './pagination-controls';
 // Componentes (usando os seus caminhos)
 import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react';
 import db from '@/app/_lib/prisma';
-import { Card, CardContent } from '@/app/_components/ui/card';
-import {
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableCell,
-  Table,
-  TableHead,
-} from '@/app/_components/ui/table';
-import { Badge } from '@/app/_components/ui/badge';
 import { StatCard } from '@/app/_components/stat-card'; // (Ajuste este caminho se necessário)
 import { DataTable } from './data-table';
 import { columns, TicketComRelacoes } from './columns';
@@ -177,6 +166,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
       <DataTable
         columns={columns}
         data={tickets as TicketComRelacoes[]} // (Força a tipagem)
+        statuses={Object.values(Status)}
       />
 
       {/* 5. Paginação (Client Component) */}

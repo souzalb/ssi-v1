@@ -144,7 +144,7 @@ model Comment {
 
   // Relacionamentos
   ticketId String
-  ticket   Ticket @relation(fields: [ticketId], references: [id])
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
