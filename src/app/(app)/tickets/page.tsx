@@ -23,6 +23,8 @@ import {
 } from '@/app/_components/ui/table';
 import { Badge } from '@/app/_components/ui/badge';
 import { StatCard } from '@/app/_components/stat-card'; // (Ajuste este caminho se necessário)
+import { DataTable } from './data-table';
+import { columns, TicketComRelacoes } from './columns';
 
 // Props que a página recebe (agora inclui 'search')
 interface TicketsPageProps {
@@ -104,6 +106,8 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     where,
     include: {
       requester: { select: { name: true } },
+      area: { select: { name: true } },
+      technician: { select: { name: true, photoUrl: true } },
     },
     orderBy: {
       createdAt: 'desc',
@@ -170,52 +174,10 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
       />
 
       {/* 4. Lista de Chamados */}
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Prioridade</TableHead>
-                <TableHead>Solicitante</TableHead>
-                <TableHead>Data</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tickets.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center">
-                    Nenhum chamado encontrado para estes filtros.
-                  </TableCell>
-                </TableRow>
-              )}
-              {tickets.map((ticket) => (
-                <TableRow key={ticket.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/tickets/${ticket.id}`}
-                      className="hover:underline"
-                    >
-                      {ticket.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{ticket.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="destructive">{ticket.priority}</Badge>
-                  </TableCell>
-                  <TableCell>{ticket.requester.name}</TableCell>
-                  <TableCell>
-                    {new Date(ticket.createdAt).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={tickets as TicketComRelacoes[]} // (Força a tipagem)
+      />
 
       {/* 5. Paginação (Client Component) */}
       <PaginationControls
