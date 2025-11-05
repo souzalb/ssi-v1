@@ -14,6 +14,10 @@ import {
 } from '@tanstack/react-table';
 import { User } from '@prisma/client';
 
+// --- Importações para Exportação (Segura) ---
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+
 // --- Componentes ---
 import {
   Table,
@@ -44,13 +48,17 @@ import {
   SelectValue,
 } from '@/app/_components/ui/select';
 import { Label } from '@/app/_components/ui/label';
-import { Trash, Download, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/app/_components/ui/dropdown-menu';
+import { Trash, Download, Loader2, FileSpreadsheet } from 'lucide-react';
 import { TicketComRelacoes } from './columns'; // (Importa o tipo do columns.tsx)
 import { cn } from '@/app/_lib/utils';
 
 // Tipo para os técnicos que vamos buscar
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
 type Technician = Pick<User, 'id' | 'name'>;
 
 interface DataTableProps<TData, TValue> {
@@ -65,13 +73,15 @@ export function DataTable<TData, TValue>({
   statuses,
 }: DataTableProps<TData, TValue>) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-
+  // Estados da Tabela
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  // Estados para as ações em lote
+  // Estados de UI
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+
+  // Estados para Ações em Lote
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [statusToAction, setStatusToAction] = useState<string>('');
   const [technicianToAction, setTechnicianToAction] = useState<string>('');
@@ -86,16 +96,12 @@ export function DataTable<TData, TValue>({
     state: {
       rowSelection,
       sorting,
-      // (Poderíamos adicionar paginação e filtros aqui,
-      // mas estamos a controlá-los via URL no Server Component)
     },
-    // Permite que 'data-table' saiba como obter o ID de uma linha
     getRowId: (row) => (row as TicketComRelacoes).id,
   });
 
   // Buscar Técnicos (para o dropdown)
   useEffect(() => {
-    // Busca a lista de técnicos quando o componente é montado
     const fetchTechnicians = async () => {
       try {
         const response = await fetch('/api/users?role=TECHNICIAN');
@@ -110,17 +116,17 @@ export function DataTable<TData, TValue>({
     fetchTechnicians();
   }, []); // O array vazio garante que rode apenas uma vez
 
-  // Lógica do Toolbar
+  // Variáveis derivadas do estado da tabela
   const numSelected = table.getSelectedRowModel().rows.length;
-  const selectedIds = table
-    .getSelectedRowModel()
-    .rows.map((row) => (row.original as TicketComRelacoes).id);
+  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedIds = selectedRows.map(
+    (row) => (row.original as TicketComRelacoes).id,
+  );
 
   // Função: Handle Bulk Update (Status ou Técnico)
   const handleBulkUpdate = async (action: 'status' | 'technician') => {
     setIsLoading(true);
     let body = {};
-    let successMessage = '';
 
     if (action === 'status') {
       if (!statusToAction) {
@@ -129,7 +135,6 @@ export function DataTable<TData, TValue>({
         return;
       }
       body = { ticketIds: selectedIds, status: statusToAction };
-      successMessage = `Status de ${selectedIds.length} chamado(s) atualizado.`;
     } else if (action === 'technician') {
       if (!technicianToAction) {
         toast.error('Selecione um técnico para atribuir.');
@@ -138,11 +143,9 @@ export function DataTable<TData, TValue>({
       }
       body = {
         ticketIds: selectedIds,
-        // Envia 'null' se o utilizador selecionar "Não atribuído"
         technicianId:
           technicianToAction === 'unassign' ? null : technicianToAction,
       };
-      successMessage = `${selectedIds.length} chamado(s) atribuído(s).`;
     }
 
     try {
@@ -158,17 +161,13 @@ export function DataTable<TData, TValue>({
       }
 
       toast.success(result.message);
-
-      // Força o Server Component a buscar os dados novamente
       router.refresh();
-      // Limpa a seleção
       table.resetRowSelection();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error('Erro', { description: error.message });
     } finally {
       setIsLoading(false);
-      // Reseta os dropdowns
       setStatusToAction('');
       setTechnicianToAction('');
     }
@@ -191,7 +190,6 @@ export function DataTable<TData, TValue>({
       }
 
       toast.success(result.message);
-
       router.refresh();
       table.resetRowSelection();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,10 +197,89 @@ export function DataTable<TData, TValue>({
       toast.error('Erro', { description: error.message });
     } finally {
       setIsLoading(false);
-      setIsDeleteAlertOpen(false); // Fecha o pop-up
+      setIsDeleteAlertOpen(false);
     }
   };
 
+  // Função: Handle Export (Excel ou CSV)
+  const handleExport = async (format: 'xlsx' | 'csv') => {
+    if (numSelected === 0) {
+      toast.error('Nenhum ticket selecionado para exportar.');
+      return;
+    }
+
+    toast.info(`A gerar o ficheiro ${format.toUpperCase()}...`, {
+      id: 'export-toast',
+    });
+    setIsLoading(true);
+
+    // 1. Mapear os dados selecionados para um formato "limpo"
+    const dataToExport = selectedRows.map((row) => {
+      const ticket = row.original as TicketComRelacoes;
+      return {
+        'ID do Ticket': `#${ticket.id.substring(ticket.id.length - 6)}`,
+        Título: ticket.title,
+        Departamento: ticket.area.name,
+        Prioridade: ticket.priority,
+        Status: ticket.status,
+        'Atribuído a': ticket.technician ? ticket.technician.name : 'N/A',
+        Solicitante: ticket.requester.name,
+        'Criado em': new Date(ticket.createdAt), // Enviar como Data
+        'Resolvido em': ticket.resolvedAt ? new Date(ticket.resolvedAt) : null,
+        Avaliação: ticket.satisfactionRating || null,
+      };
+    });
+
+    // 2. Criar o Workbook e a Worksheet com exceljs
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Chamados');
+
+    // 3. Adicionar Cabeçalhos
+    worksheet.columns = Object.keys(dataToExport[0]).map((key) => ({
+      header: key,
+      key: key,
+      width: 20, // Largura de coluna padrão
+    }));
+
+    // 4. Formatar colunas de Data
+    worksheet.getColumn('Criado em').numFmt = 'dd/mm/yyyy hh:mm';
+    worksheet.getColumn('Resolvido em').numFmt = 'dd/mm/yyyy hh:mm';
+
+    // 5. Adicionar os dados
+    worksheet.addRows(dataToExport);
+
+    // 6. Gerar o ficheiro (Buffer)
+    try {
+      let buffer: ArrayBuffer;
+      let fileType: string;
+      let fileName: string;
+
+      if (format === 'xlsx') {
+        buffer = await workbook.xlsx.writeBuffer();
+        fileType =
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        fileName = 'chamados_exportados.xlsx';
+      } else {
+        // 'csv'
+        buffer = await workbook.csv.writeBuffer();
+        fileType = 'text/csv;charset=utf-8;';
+        fileName = 'chamados_exportados.csv';
+      }
+
+      // 7. Iniciar o Download com FileSaver
+      const blob = new Blob([buffer], { type: fileType });
+      saveAs(blob, fileName); // O 'saveAs' vem do 'file-saver'
+
+      toast.success('Exportação concluída!', { id: 'export-toast' });
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao gerar o ficheiro.', { id: 'export-toast' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- O JSX ---
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
@@ -213,23 +290,38 @@ export function DataTable<TData, TValue>({
             numSelected > 0 ? 'bg-muted/50' : 'hidden', // Mostra todo o bloco
           )}
         >
-          {/* Linha 1: Contagem e Ações Finais */}
+          {/* Linha 1: Contagem e Ações Finais (Exportar, Excluir) */}
           <div className="flex items-center justify-between gap-4">
             <div className="text-muted-foreground flex-1 text-sm font-medium">
               {numSelected} ticket(s) selecionado(s)
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => alert('Lógica de Exportar a implementar...')}
-                disabled={isLoading}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Exportar
-              </Button>
+              {/* Dropdown de Exportar */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={isLoading}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                    <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
+                    Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('csv')}>
+                    <FileSpreadsheet className="mr-2 h-4 w-4 text-blue-600" />
+                    CSV (.csv)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <FileSpreadsheet className="mr-2 h-4 w-4 text-red-600" />
+                    PDF (.pdf) (em breve)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
+              {/* Botão de Excluir (com AlertDialog) */}
               <AlertDialog
                 open={isDeleteAlertOpen}
                 onOpenChange={setIsDeleteAlertOpen}
@@ -282,7 +374,6 @@ export function DataTable<TData, TValue>({
                     <SelectValue placeholder="Selecionar status..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* Usa a prop 'statuses' vinda do Server Component */}
                     {statuses.map((s) => (
                       <SelectItem key={s} value={s}>
                         {s}
