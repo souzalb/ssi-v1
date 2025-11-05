@@ -14,16 +14,8 @@ import { columns, TicketComRelacoes } from './columns';
 // Componentes (usando os seus caminhos)
 import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react';
 import db from '@/app/_lib/prisma'; // (O seu caminho para o Prisma)
-import { Card, CardContent } from '@/app/_components/ui/card';
-import {
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableCell,
-  Table,
-} from '@/app/_components/ui/table';
-import { Badge } from '@/app/_components/ui/badge';
 import { StatCard } from '@/app/_components/stat-card'; // (Ajuste este caminho se necessário)
+import { Button } from '@/app/_components/ui/button';
 
 // Props que a página recebe (agora inclui todos os filtros)
 interface TicketsPageProps {
@@ -49,7 +41,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     redirect('/login');
   }
 
-  const { id: userId, role, areaId } = session.user;
+  const { id: userId, role, areaId, name } = session.user;
 
   // 1.2. Validar Parâmetros da URL (com 'await' para resolver a Promise)
   const resolvedSearchParams = await searchParams;
@@ -176,7 +168,17 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
 
   return (
     <div className="space-y-6 p-8">
-      <h1 className="text-3xl font-bold">Gerenciador de Chamados</h1>
+      <header className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Gerenciador de Chamados</h1>
+          <p className="text-muted-foreground">
+            Olá, {name}! Bem-vindo(a) de volta.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/tickets/new">Abrir Novo Chamado</Link>
+        </Button>
+      </header>
 
       {/* 2. Cards de Estatísticas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
