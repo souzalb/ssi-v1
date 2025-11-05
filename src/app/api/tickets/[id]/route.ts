@@ -89,6 +89,17 @@ export async function PATCH(
     const dataToUpdate: Prisma.TicketUpdateInput = {};
     if (status) {
       dataToUpdate.status = status;
+
+      // --- INÍCIO DA NOVA LÓGICA ---
+      // Se o status novo for RESOLVED ou CLOSED,
+      // E o chamado AINDA NÃO tiver uma data de resolução (resolvedAt é null)
+      if (
+        (status === Status.RESOLVED || status === Status.CLOSED) &&
+        ticket.resolvedAt === null
+      ) {
+        // "Trava" a data de resolução
+        dataToUpdate.resolvedAt = new Date();
+      }
     }
     if (technicianId !== undefined) {
       if (technicianId === null) {

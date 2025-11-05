@@ -114,6 +114,7 @@ model Ticket {
   updatedAt DateTime @updatedAt
 
   satisfactionRating Int? // Armazena a nota (1-5). É opcional.
+  resolvedAt DateTime? // Armazena a data/hora da primeira resolução
 
   // Chaves Estrangeiras e Relacionamentos
   areaId String
