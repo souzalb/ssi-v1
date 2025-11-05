@@ -113,6 +113,8 @@ model Ticket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  satisfactionRating Int? // Armazena a nota (1-5). É opcional.
+
   // Chaves Estrangeiras e Relacionamentos
   areaId String
   area   Area   @relation(fields: [areaId], references: [id])

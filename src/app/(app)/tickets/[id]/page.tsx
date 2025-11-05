@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 
-import { Role } from '@prisma/client';
+import { Role, Status } from '@prisma/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -19,6 +19,7 @@ import db from '@/app/_lib/prisma';
 import { Badge } from '@/app/_components/ui/badge';
 import { TicketActions } from './ticket-actions';
 import { AttachmentList } from './attachment-list';
+import { TicketRating } from './ticket-rating';
 
 // 1. Função de busca e validação
 async function getTicketData(ticketId: string) {
@@ -95,6 +96,14 @@ export default async function TicketDetailPage({
 
   const { ticket, session } = data;
 
+  // --- 3. DEFINIR CONDIÇÕES PARA A AVALIAÇÃO ---
+  const isRequester = session.user.id === ticket.requesterId;
+  const isTicketClosed =
+    ticket.status === Status.RESOLVED || ticket.status === Status.CLOSED;
+
+  // A caixa de avaliação só aparece se AMBAS as condições forem verdadeiras
+  const showRatingBox = isRequester && isTicketClosed;
+
   return (
     <div className="space-y-6 p-8">
       {/* --- Cabeçalho --- */}
@@ -125,6 +134,15 @@ export default async function TicketDetailPage({
               </p>
             </CardContent>
           </Card>
+
+          {/* --- 4. RENDERIZAÇÃO CONDICIONAL DA AVALIAÇÃO --- */}
+          {/* Se 'showRatingBox' for verdadeiro, renderiza o componente */}
+          {showRatingBox && (
+            <TicketRating
+              ticketId={ticket.id}
+              currentRating={ticket.satisfactionRating || null}
+            />
+          )}
 
           {/* 3. Renderiza o Client Component */}
           <CommentSection
