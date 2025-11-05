@@ -33,7 +33,12 @@ export async function Header() {
           >
             Dashboard
           </Link>
-          {/* (Você pode adicionar mais links aqui, ex: "Meus Chamados") */}
+          <Link
+            href="/tickets"
+            className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
+          >
+            Chamados
+          </Link>
         </nav>
 
         {/* UserNav na Direita */}
