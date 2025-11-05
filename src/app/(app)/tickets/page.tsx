@@ -4,30 +4,32 @@ import { redirect } from 'next/navigation';
 // Os Enums são importados aqui (no Server Component)
 import { Prisma, Role, Status, Priority } from '@prisma/client';
 
-// Nossos novos componentes
+// Componentes da Página
 import { TicketFilters } from './ticket-filters';
 import { PaginationControls } from './pagination-controls';
-
-// Componentes (usando os seus caminhos)
-import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react';
-import db from '@/app/_lib/prisma';
-import { StatCard } from '@/app/_components/stat-card'; // (Ajuste este caminho se necessário)
 import { DataTable } from './data-table';
 import { columns, TicketComRelacoes } from './columns';
 
-// Props que a página recebe (agora inclui 'search')
+// Componentes (usando os seus caminhos)
+import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react';
+import db from '@/app/_lib/prisma'; // (O seu caminho para o Prisma)
+import { StatCard } from '@/app/_components/stat-card'; // (Ajuste este caminho se necessário)
+
+// Props que a página recebe (agora inclui 'search', 'sort', 'order')
 interface TicketsPageProps {
   searchParams: Promise<{
     status?: Status;
     priority?: Priority;
     page?: string;
-    search?: string; // <-- Novo
+    search?: string;
+    sort?: string;
+    order?: 'asc' | 'desc';
   }>;
 }
 
 const ITEMS_PER_PAGE = 20;
 
-// 1. O Server Component (A Página)
+// O Server Component (A Página)
 export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   // 1.1. Obter a sessão
   const session = await getServerSession(authOptions);
@@ -37,13 +39,17 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
 
   const { id: userId, role, areaId } = session.user;
 
-  // 1.2. Validar Parâmetros da URL (com 'await')
+  // 1.2. Validar Parâmetros da URL (com 'await' para resolver a Promise)
   const resolvedSearchParams = await searchParams;
   const statusFilter = resolvedSearchParams.status;
   const priorityFilter = resolvedSearchParams.priority;
   const page = parseInt(resolvedSearchParams.page || '1', 10);
-  const searchFilter = resolvedSearchParams.search; // <-- Novo
+  const searchFilter = resolvedSearchParams.search;
   const skip = (page - 1) * ITEMS_PER_PAGE;
+
+  // Parâmetros de Ordenação
+  const sort = resolvedSearchParams.sort || 'createdAt'; // Padrão: createdAt
+  const order = resolvedSearchParams.order || 'desc'; // Padrão: desc
 
   // 1.3. Construir a Cláusula 'where' (RBAC + Filtros)
   let where: Prisma.TicketWhereInput = {};
@@ -69,10 +75,10 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     where.priority = priorityFilter;
   }
 
-  // --- NOVO: Filtro de Pesquisa (OR) ---
+  // Filtro de Pesquisa (OR)
   if (searchFilter) {
     where.OR = [
-      { id: { equals: searchFilter } }, // Pesquisa exata por ID
+      { id: { equals: searchFilter } },
       { title: { contains: searchFilter, mode: 'insensitive' } },
       { description: { contains: searchFilter, mode: 'insensitive' } },
       { equipment: { contains: searchFilter, mode: 'insensitive' } },
@@ -80,11 +86,25 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     ];
   }
 
-  // 1.4. Executar todas as queries em paralelo
+  // 1.4. Construir a Cláusula 'orderBy'
+  const orderBy: Prisma.TicketOrderByWithRelationInput = {};
+  if (
+    sort === 'id' ||
+    sort === 'title' ||
+    sort === 'status' ||
+    sort === 'priority' ||
+    sort === 'createdAt'
+  ) {
+    orderBy[sort] = order;
+  } else {
+    orderBy.createdAt = 'desc'; // Fallback
+  }
+
+  // 1.5. Executar todas as queries em paralelo
   const statsQuery = db.ticket.groupBy({
     by: ['status'],
     _count: { _all: true },
-    where: where, // Usa o 'where' completo (com RBAC, filtros e pesquisa)
+    where: where, // Usa o 'where' completo
   });
 
   const totalTicketsQuery = db.ticket.count({
@@ -95,12 +115,10 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     where,
     include: {
       requester: { select: { name: true } },
-      area: { select: { name: true } },
-      technician: { select: { name: true, photoUrl: true } },
+      area: { select: { name: true } }, // Necessário para 'columns.tsx'
+      technician: { select: { name: true, photoUrl: true } }, // Necessário para 'columns.tsx'
     },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    orderBy: orderBy, // Aplica a ordenação
     take: ITEMS_PER_PAGE,
     skip: skip,
   });
@@ -111,10 +129,9 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     ticketsQuery,
   ]);
 
-  // 1.5. Calcular Paginação e Stats
+  // 1.6. Calcular Paginação e Stats
   const totalPages = Math.ceil(totalTickets / ITEMS_PER_PAGE);
 
-  // (Mapeia os resultados do groupBy)
   const formattedStats = {
     [Status.OPEN]: 0,
     [Status.ASSIGNED]: 0,
@@ -162,17 +179,17 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
         priorities={Object.values(Priority)}
       />
 
-      {/* 4. Lista de Chamados */}
+      {/* 4. Lista de Chamados (Data Table) */}
       <DataTable
         columns={columns}
-        data={tickets as TicketComRelacoes[]} // (Força a tipagem)
+        data={tickets as TicketComRelacoes[]}
         statuses={Object.values(Status)}
       />
 
       {/* 5. Paginação (Client Component) */}
       <PaginationControls
         currentPage={page}
-        totalPages={totalPages > 0 ? totalPages : 1} // Garante que totalPages seja pelo menos 1
+        totalPages={totalPages > 0 ? totalPages : 1}
         totalResults={totalTickets}
       />
     </div>

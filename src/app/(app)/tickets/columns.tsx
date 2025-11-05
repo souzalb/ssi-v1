@@ -19,7 +19,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/app/_components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, Edit2 } from 'lucide-react';
+import {
+  MoreHorizontal,
+  Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/app/_lib/utils';
 
@@ -58,6 +64,26 @@ const priorityColors: Record<Priority, string> = {
   HIGH: 'bg-orange-100 text-orange-800 border-orange-200',
   URGENT: 'bg-red-100 text-red-800 border-red-200',
 };
+const SortableHeader: React.FC<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  column: any;
+  title: string;
+}> = ({ column, title }) => {
+  const isSorted = column.getIsSorted();
+
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => column.toggleSorting(isSorted == 'asc')}
+      className="flex items-center gap-2"
+    >
+      {title}
+      {isSorted == 'asc' && <ArrowUp className="h-4 w-4 text-blue-600" />}
+      {isSorted == 'desc' && <ArrowDown className="h-4 w-4 text-blue-600" />}
+      {!isSorted && <ArrowUpDown className="h-4 w-4 text-gray-400" />}
+    </Button>
+  );
+};
 
 // Definição das Colunas
 export const columns: ColumnDef<TicketComRelacoes>[] = [
@@ -88,7 +114,7 @@ export const columns: ColumnDef<TicketComRelacoes>[] = [
   // 2. Coluna ID
   {
     accessorKey: 'id',
-    header: 'ID',
+    header: ({ column }) => <SortableHeader column={column} title="ID" />,
     cell: ({ row }) => (
       <Link
         href={`/tickets/${row.original.id}`}
@@ -102,7 +128,7 @@ export const columns: ColumnDef<TicketComRelacoes>[] = [
   // 3. Coluna Título (com descrição)
   {
     accessorKey: 'title',
-    header: 'Título',
+    header: ({ column }) => <SortableHeader column={column} title="Título" />,
     cell: ({ row }) => (
       <div className="flex flex-col">
         <span className="font-medium">{row.original.title}</span>
@@ -127,7 +153,9 @@ export const columns: ColumnDef<TicketComRelacoes>[] = [
   // 5. Coluna Prioridade (com cor)
   {
     accessorKey: 'priority',
-    header: 'Prioridade',
+    header: ({ column }) => (
+      <SortableHeader column={column} title="Prioridade" />
+    ),
     cell: ({ row }) => {
       const priority = row.original.priority;
       return (
@@ -146,7 +174,7 @@ export const columns: ColumnDef<TicketComRelacoes>[] = [
   // 6. Coluna Status (com cor)
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: ({ column }) => <SortableHeader column={column} title="Status" />,
     cell: ({ row }) => {
       const status = row.original.status;
       return (
@@ -186,7 +214,9 @@ export const columns: ColumnDef<TicketComRelacoes>[] = [
   // 8. Coluna Criado em
   {
     accessorKey: 'createdAt',
-    header: 'Criado em',
+    header: ({ column }) => (
+      <SortableHeader column={column} title="Criado em" />
+    ),
     cell: ({ row }) => (
       <span className="text-muted-foreground text-sm">
         {format(new Date(row.original.createdAt), 'dd/MM/yyyy')}
