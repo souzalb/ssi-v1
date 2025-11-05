@@ -15,6 +15,8 @@ export async function Header() {
 
   const { user } = session;
 
+  const isCommonUser = user.role === 'COMMON';
+
   return (
     <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
       <div className="container flex h-16 items-center px-4 md:px-8">
@@ -27,12 +29,14 @@ export async function Header() {
             <Package2 className="h-6 w-6" />
             <span className="sr-only">SS</span>
           </Link>
-          <Link
-            href="/dashboard"
-            className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
-          >
-            Dashboard
-          </Link>
+          {!isCommonUser && (
+            <Link
+              href="/dashboard"
+              className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"
+            >
+              Dashboard
+            </Link>
+          )}
           <Link
             href="/tickets"
             className="text-muted-foreground hover:text-primary text-sm font-medium transition-colors"

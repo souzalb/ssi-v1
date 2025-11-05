@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
-
 import { z } from 'zod';
-import { Priority, Role } from '@prisma/client'; // Importa Role
+import { Priority, Role } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-
-import { NewTicketEmail } from '@/emails/new-ticket-email';
-// O React é necessário para o Resend renderizar o template
 import React from 'react';
-import db from '@/app/_lib/prisma';
-import { fromEmail, resend } from '@/app/_lib/resend';
 
-// --- 1. Schema para um Anexo (espelha a resposta da API de upload) ---
+// --- 1. NOVAS IMPORTAÇÕES ---
+import db from '@/app/_lib/prisma'; // (O seu caminho para o Prisma)
+import { fromEmail, resend } from '@/app/_lib/resend'; // (O seu caminho para o Resend)
+import { NewTicketEmail } from '@/emails/new-ticket-email';
+import { addBusinessDays } from 'date-fns'; // <-- IMPORTAÇÃO DA DATE-FNS
+
+// --- Schemas (sem alteração) ---
 const attachmentSchema = z.object({
   url: z.string().url('URL do anexo inválida'),
   filename: z.string().min(1, 'Nome do arquivo do anexo inválido'),
@@ -19,7 +19,6 @@ const attachmentSchema = z.object({
   size: z.number().int().positive().optional(),
 });
 
-// --- 2. Schema de Criação do Chamado (agora com anexos) ---
 const ticketCreateSchema = z.object({
   title: z.string().min(5, 'Título deve ter pelo menos 5 caracteres'),
   description: z
@@ -31,8 +30,6 @@ const ticketCreateSchema = z.object({
   assetTag: z.string().min(3, 'Patrimônio é obrigatório'),
   priority: z.nativeEnum(Priority),
   areaId: z.string().cuid('ID da Área inválido'),
-
-  // Aceita um array de anexos
   attachments: z.array(attachmentSchema).optional(),
 });
 
@@ -43,14 +40,12 @@ export async function POST(req: Request) {
   if (!session || !session.user) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
-
-  // O 'requesterId' também será o 'uploaderId' dos anexos
   const userId = session.user.id;
 
   try {
     const body = await req.json();
 
-    // 3.2. Validação (agora inclui os anexos)
+    // 3.2. Validação
     const validation = ticketCreateSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
@@ -62,43 +57,55 @@ export async function POST(req: Request) {
     // 3.3. Separar os dados
     const { areaId, attachments, ...ticketData } = validation.data;
 
+    // --- 4. NOVO: Lógica de Cálculo do SLA ---
+    const now = new Date();
+    let slaDeadline: Date | null = null;
+
+    switch (ticketData.priority) {
+      case Priority.URGENT:
+        slaDeadline = addBusinessDays(now, 1);
+        break;
+      case Priority.HIGH:
+        slaDeadline = addBusinessDays(now, 3);
+        break;
+      case Priority.MEDIUM:
+        slaDeadline = addBusinessDays(now, 5);
+        break;
+      case Priority.LOW:
+        slaDeadline = addBusinessDays(now, 10);
+        break;
+    }
+    // --- FIM DA LÓGICA DE SLA ---
+
     // 3.4. Criar o chamado e os anexos (Transacional)
     const newTicket = await db.ticket.create({
       data: {
-        // Dados do Ticket (title, description, etc.)
         ...ticketData,
-
-        // Relação com o Solicitante
+        slaDeadline: slaDeadline, // <-- 5. SALVA O PRAZO NO BANCO
         requester: {
           connect: { id: userId },
         },
-
-        // Relação com a Área
         area: {
           connect: { id: areaId },
         },
-
-        // Bloco de criação de anexos
         ...(attachments &&
           attachments.length > 0 && {
             attachments: {
               createMany: {
                 data: attachments.map((att) => ({
-                  ...att, // url, filename, fileType, size
-                  uploaderId: userId, // Associa o upload ao usuário logado
+                  ...att,
+                  uploaderId: userId,
                 })),
               },
             },
           }),
       },
-      // Precisamos incluir os dados para o email
       include: {
-        requester: { select: { name: true } }, // Nome do solicitante
-        area: { select: { name: true } }, // Nome da área
+        requester: { select: { name: true } },
+        area: { select: { name: true } },
         attachments: true,
       },
     });
-
     // --- 4. NOVO: Lógica de Envio de Email (Fire-and-Forget) ---
     try {
       // 4.1. Encontrar o(s) gestor(es) da área
