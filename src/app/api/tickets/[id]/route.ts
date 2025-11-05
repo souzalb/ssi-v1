@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
-
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { Prisma, Role, Status } from '@prisma/client';
+import { Role, Status } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import db from '@/app/_lib/prisma';
 
-// 1. Schema de Validação (Zod)
-// Define os campos que PODEM ser atualizados
+// --- 1. Importações de Email ---
+import { TicketAssignedEmail } from '@/emails/ticket-assigned-email';
+import { TicketStatusUpdateEmail } from '@/emails/ticket-status-update-email'; // <-- NOVO TEMPLATE
+import React from 'react';
+import db from '@/app/_lib/prisma';
+import { fromEmail, resend } from '@/app/_lib/resend';
+
+// --- Schema (sem alteração) ---
 const ticketUpdateSchema = z.object({
   status: z.nativeEnum(Status).optional(),
-  technicianId: z.string().cuid().nullable().optional(), // 'null' para desatribuir
+  technicianId: z.string().cuid().nullable().optional(),
 });
 
 // 2. Handler PATCH
@@ -20,17 +25,25 @@ export async function PATCH(
 ) {
   // 2.1. Segurança: Obter a sessão
   const session = await getServerSession(authOptions);
-  if (!session || !session.user) {
+  if (!session || !session.user || !session.user.name) {
+    // Garantir que temos o nome do atualizador
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
 
-  // 2.2. Obter ID do Chamado (com 'await' da correção anterior)
+  // 2.2. Obter ID do Chamado
   const params = await context.params;
   const ticketId = params.id;
 
-  // 2.3. Obter dados do chamado ATUAL (para checar permissões)
+  // --- 2.3. MODIFICADO: Obter dados do chamado ATUAL ---
+  // Precisamos dos dados do solicitante (para o email)
   const ticket = await db.ticket.findUnique({
     where: { id: ticketId },
+    include: {
+      requester: {
+        // <-- Inclui o solicitante
+        select: { id: true, name: true, email: true },
+      },
+    },
   });
 
   if (!ticket) {
@@ -40,22 +53,19 @@ export async function PATCH(
     );
   }
 
-  // 2.4. Autorização (RBAC)
-  const { role, areaId, id: userId } = session.user;
-
+  // 2.4. Autorização (RBAC) (sem alteração)
+  const { role, areaId, id: userId, name: updaterName } = session.user;
   const isSuperAdmin = role === Role.SUPER_ADMIN;
   const isManager = role === Role.MANAGER && ticket.areaId === areaId;
   const isAssignedTech =
     role === Role.TECHNICIAN && ticket.technicianId === userId;
-
-  // Somente estes usuários podem atualizar
   const canUpdate = isSuperAdmin || isManager || isAssignedTech;
   if (!canUpdate) {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
   }
 
   try {
-    // 2.5. Validar o corpo (body)
+    // 2.5. Validar o corpo (body) (sem alteração)
     const body = await req.json();
     const validation = ticketUpdateSchema.safeParse(body);
     if (!validation.success) {
@@ -67,8 +77,7 @@ export async function PATCH(
 
     const { status, technicianId } = validation.data;
 
-    // 2.6. Autorização Específica da Ação
-    // Um Técnico não pode atribuir/desatribuir (apenas Mudar Status)
+    // 2.6. Autorização Específica (sem alteração)
     if (technicianId !== undefined && role === Role.TECHNICIAN) {
       return NextResponse.json(
         { error: 'Técnicos não podem atribuir chamados' },
@@ -76,36 +85,17 @@ export async function PATCH(
       );
     }
 
-    // 2.7. Preparar os dados para atualização
+    // 2.7. Preparar os dados para atualização (sem alteração)
     const dataToUpdate: Prisma.TicketUpdateInput = {};
-
     if (status) {
       dataToUpdate.status = status;
     }
-
-    // 'technicianId' foi enviado? (pode ser string ou null)
     if (technicianId !== undefined) {
       if (technicianId === null) {
-        // --- CORREÇÃO AQUI ---
-        // Se 'null', desatribui o técnico
-        dataToUpdate.technician = {
-          disconnect: true,
-        };
+        dataToUpdate.technician = { disconnect: true };
       } else {
-        // --- CORREÇÃO AQUI ---
-        // Se for um ID 'string', conecta o novo técnico
-        dataToUpdate.technician = {
-          connect: {
-            id: technicianId,
-          },
-        };
-
-        // Lógica de Negócio: Se atribuir um técnico e o chamado estiver
-        // 'OPEN', automaticamente muda para 'ASSIGNED'.
-        if (
-          ticket.status === Status.OPEN &&
-          !status // (Só se o status não foi mudado manualmente na mesma requisição)
-        ) {
+        dataToUpdate.technician = { connect: { id: technicianId } };
+        if (ticket.status === Status.OPEN && !status) {
           dataToUpdate.status = Status.ASSIGNED;
         }
       }
@@ -115,14 +105,78 @@ export async function PATCH(
     const updatedTicket = await db.ticket.update({
       where: { id: ticketId },
       data: dataToUpdate,
-      // Retorna o chamado atualizado com os dados necessários para a UI
       include: {
-        requester: { select: { name: true } },
-        technician: { select: { name: true } },
+        requester: { select: { name: true } }, // (Já temos 'requester' do 'ticket' acima)
+        technician: { select: { name: true, email: true } },
         area: { select: { name: true } },
       },
     });
 
+    // --- 3. LÓGICA DE ENVIO DE EMAILS ---
+
+    const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/${updatedTicket.id}`;
+    const baseEmailDataAvailable =
+      fromEmail && process.env.NEXT_PUBLIC_BASE_URL;
+
+    // --- 3.1. Email para o Técnico (Atribuição) ---
+    const isAssigningNewTechnician =
+      technicianId !== undefined &&
+      technicianId !== null &&
+      ticket.technicianId !== technicianId;
+
+    if (
+      isAssigningNewTechnician &&
+      updatedTicket.technician?.email &&
+      updatedTicket.requester &&
+      baseEmailDataAvailable
+    ) {
+      try {
+        await resend.emails.send({
+          from: fromEmail!,
+          to: updatedTicket.technician.email,
+          subject: `Você foi atribuído ao Chamado #${updatedTicket.id}: ${updatedTicket.title}`,
+          react: React.createElement(TicketAssignedEmail, {
+            technicianName: updatedTicket.technician.name || 'Técnico',
+            requesterName: updatedTicket.requester.name,
+            ticketTitle: updatedTicket.title,
+            ticketPriority: updatedTicket.priority,
+            ticketUrl: ticketUrl,
+          }),
+        });
+      } catch (emailError) {
+        console.error('[API_TICKETS_ASSIGN_EMAIL_ERROR]', emailError);
+      }
+    }
+
+    // --- 3.2. NOVO: Email para o Solicitante (Mudança de Status) ---
+    const statusDidChange = updatedTicket.status !== ticket.status;
+
+    if (
+      statusDidChange && // 1. O status realmente mudou?
+      ticket.requester?.email && // 2. O solicitante tem email?
+      ticket.requester.id !== userId && // 3. O solicitante não é o próprio atualizador?
+      baseEmailDataAvailable
+    ) {
+      try {
+        await resend.emails.send({
+          from: fromEmail!,
+          to: ticket.requester.email,
+          subject: `Status do seu chamado #${ticket.id} atualizado para: ${updatedTicket.status}`,
+          react: React.createElement(TicketStatusUpdateEmail, {
+            requesterName: ticket.requester.name || 'Solicitante',
+            updaterName: updaterName || 'Equipa', // Nome de quem está logado
+            ticketTitle: ticket.title,
+            oldStatus: ticket.status, // Status antigo (do 'ticket')
+            newStatus: updatedTicket.status, // Status novo (do 'updatedTicket')
+            ticketUrl: ticketUrl,
+          }),
+        });
+      } catch (emailError) {
+        console.error('[API_TICKETS_STATUS_EMAIL_ERROR]', emailError);
+      }
+    }
+
+    // 4. Retorna o sucesso
     return NextResponse.json(updatedTicket);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
