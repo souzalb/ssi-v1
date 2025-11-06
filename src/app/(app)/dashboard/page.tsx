@@ -5,6 +5,7 @@ import { Prisma, Role, Status, Priority } from '@prisma/client';
 import db from '@/app/_lib/prisma'; // (A usar o seu caminho)
 import Link from 'next/link';
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // --- 1. IMPORTAR FUNÇÕES DA DATE-FNS ---
 import { subMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,6 +42,7 @@ import { StatusChart } from './status-chart';
 import { PriorityChart } from './priority-chart';
 import { TrendChart } from './trend-chart'; // <-- Gráfico de Tendência
 import { StatCard } from '@/app/_components/stat-card';
+import { AreaChart } from './area-chart';
 
 type TicketWithRequester = Prisma.TicketGetPayload<{
   include: { requester: { select: { name: true } } };
@@ -216,16 +218,42 @@ export default async function DashboardPage() {
       slaDeadline: true,
     },
   });
+  // --- 3.1.Query 6 (Condicional para Super Admin) ---
+  let areaStatsQuery: Promise<any[]>;
 
-  // Executa todas as 5 queries ao mesmo tempo
-  const [tickets, stats, priorityStats, avgRatingResult, performanceData] =
-    await Promise.all([
-      ticketsQuery,
-      statsQuery,
-      priorityStatsQuery,
-      avgRatingQuery,
-      performanceDataQuery,
-    ]);
+  if (role === Role.SUPER_ADMIN) {
+    // Se for Super Admin, busca a contagem de tickets por área
+    areaStatsQuery = db.area.findMany({
+      include: {
+        _count: {
+          select: { tickets: true }, // Conta os tickets em cada área
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  } else {
+    // Se não for admin, apenas resolve uma promise vazia
+    areaStatsQuery = Promise.resolve([]);
+  }
+
+  // --- 3.2. ATUALIZAR O PROMISE.ALL ---
+  const [
+    tickets,
+    stats,
+    priorityStats,
+    avgRatingResult,
+    performanceData,
+    areaStats, // <-- 3.3. Adiciona o resultado
+  ] = await Promise.all([
+    ticketsQuery,
+    statsQuery,
+    priorityStatsQuery,
+    avgRatingQuery,
+    performanceDataQuery,
+    areaStatsQuery, // <-- 3.4. Adiciona a query
+  ]);
 
   // --- 4. Formatar os dados das Estatísticas ---
 
@@ -266,6 +294,12 @@ export default async function DashboardPage() {
 
   // 4.4. Dados de Tendência
   const trendData = formatTrendData(performanceData);
+
+  // (Formata os dados que o Gráfico de Rosca espera)
+  const formattedAreaStats = areaStats.map((area) => ({
+    name: area.name,
+    total: area._count.tickets,
+  }));
 
   // --- 5. O JSX (Layout de 3 Secções) ---
   return (
@@ -314,6 +348,7 @@ export default async function DashboardPage() {
           <TrendChart data={trendData} />
           <StatusChart data={formattedStats} />
           <PriorityChart data={formattedPriorityStats} />
+          {role === Role.SUPER_ADMIN && <AreaChart data={formattedAreaStats} />}
         </div>
 
         {/* Coluna da Direita (Chamados Recentes) */}

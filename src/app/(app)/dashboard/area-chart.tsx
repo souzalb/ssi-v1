@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import {
   ResponsiveContainer,
   PieChart,
@@ -20,24 +18,26 @@ import {
   CardTitle,
 } from '@/app/_components/ui/card'; // (Ajuste o caminho se necessário)
 
-// Props: O Server Component vai passar os dados já formatados
-interface PriorityChartProps {
+// Props (sem alteração)
+interface AreaChartProps {
   data: {
     name: string;
     total: number;
   }[];
 }
 
-// 1. Mapeamento de Cores para as Prioridades (a sua lógica original, está correta)
-const COLORS: { [key: string]: string } = {
-  LOW: '#3b82f6', // Azul (blue-500)
-  MEDIUM: '#eab308', // Amarelo (yellow-500)
-  HIGH: '#f97316', // Laranja (orange-500)
-  URGENT: '#ef4444', // Vermelho (red-500)
-};
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-// --- 2. NOVO: Tooltip Customizado ---
+// 1. Paleta de cores (sem alteração)
+const COLORS = [
+  '#0088FE', // Azul
+  '#00C49F', // Verde
+  '#FFBB28', // Amarelo
+  '#FF8042', // Laranja
+  '#AF19FF', // Roxo
+];
 
+// --- 2. Tooltip Customizado (sem alteração) ---
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
@@ -53,10 +53,6 @@ const CustomTooltip = ({ active, payload }: any) => {
           <span className="text-foreground text-right text-sm font-semibold">
             {data.total}
           </span>
-          <div className="text-muted-foreground text-sm">Percentagem</div>
-          <span className="text-foreground text-right text-sm font-semibold">
-            {(data.percent * 100).toFixed(1)}%
-          </span>
         </div>
       </div>
     );
@@ -64,7 +60,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-// --- 3. NOVO: Legenda Customizada ---
+// --- 3. Legenda Customizada (sem alteração) ---
 const CustomLegend = (props: any) => {
   const { payload } = props;
   if (!payload || payload.length === 0) return null;
@@ -92,7 +88,7 @@ const CustomLegend = (props: any) => {
   );
 };
 
-// --- 4. NOVO: Rótulo de Percentagem (para dentro da fatia) ---
+// --- 4. Rótulo de Percentagem (sem alteração) ---
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({
   cx,
@@ -102,10 +98,11 @@ const renderCustomizedLabel = ({
   outerRadius,
   percent,
 }: any) => {
+  // ... (lógica de cálculo do rótulo)
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  if (percent < 0.05) return null; // Não mostra rótulo se a fatia for muito pequena
+  if (percent < 0.05) return null;
   return (
     <text
       x={x}
@@ -120,22 +117,17 @@ const renderCustomizedLabel = ({
   );
 };
 
-export function PriorityChart({ data }: PriorityChartProps) {
+export function AreaChart({ data }: AreaChartProps) {
   const chartData = data.filter((item) => item.total > 0);
 
-  // Empty state (sem alteração)
   if (chartData.length === 0) {
+    // ... (O seu "empty state" Card)
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Chamados por Prioridade</CardTitle>
-          <CardDescription>
-            Distribuição dos chamados pelo nível de prioridade.
-          </CardDescription>
-        </CardHeader>
+        {/* ... (CardHeader) ... */}
         <CardContent className="flex h-[350px] items-center justify-center">
           <p className="text-muted-foreground">
-            Não há dados de prioridade para exibir.
+            Não há dados de chamados por área para exibir.
           </p>
         </CardContent>
       </Card>
@@ -145,60 +137,63 @@ export function PriorityChart({ data }: PriorityChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Chamados por Prioridade</CardTitle>
+        <CardTitle>Chamados por Área</CardTitle>
         <CardDescription>
-          Distribuição dos chamados pelo nível de prioridade.
+          Distribuição de todos os chamados por departamento.
         </CardDescription>
       </CardHeader>
 
       {/* --- 5. LAYOUT RESPONSIVO ATUALIZADO --- */}
       <CardContent>
-        {/* Mobile (padrão): 'flex-col'.
-          Desktop ('md:'): 'flex-row' e 'items-center'.
+        {/* Mobile (padrão): 'grid-cols-1'. Altura automática.
+          Desktop ('md:'): 'grid-cols-2'. Altura fixa de 350px.
         */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="grid grid-cols-1 gap-4 md:h-[350px] md:grid-cols-2">
           {/* Coluna 1: O Gráfico */}
-          {/* Damos altura fixa ao container para evitar avisos */}
-          <ResponsiveContainer width="100%" height={350} className="flex-1">
-            <PieChart>
-              {/* Tooltip Customizado */}
-              <Tooltip content={<CustomTooltip />} />
-
-              {/* O Gráfico de Pizza */}
-              <Pie
-                data={chartData}
-                dataKey="total"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={140} // (Este é um Gráfico de Pizza, sem innerRadius)
-                fill="#8884d8"
-                labelLine={false}
-                label={renderCustomizedLabel} // <-- Rótulo customizado (percentagem)
-              >
-                {/* Aplica as cores corretas (usando a sua lógica de 'name') */}
-                {chartData.map((entry) => (
-                  <Cell
-                    key={`cell-${entry.name}`}
-                    fill={COLORS[entry.name] || '#8884d8'}
-                    stroke="#fff"
-                    strokeWidth={1}
-                  />
-                ))}
-              </Pie>
-
-              {/* Esconde a legenda original (corrige o aviso 'iconSize') */}
-              <Legend content={(props: any) => null} />
-            </PieChart>
-          </ResponsiveContainer>
+          {/* Mobile: 'h-[300px]' (altura fixa para o gráfico no telemóvel)
+            Desktop: 'h-full' (preenche os 350px do 'pai')
+          */}
+          <div className="h-[300px] w-full md:h-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip content={<CustomTooltip />} />
+                <Pie
+                  data={chartData}
+                  dataKey="total"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={140}
+                  fill="#8884d8"
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                      stroke="#fff"
+                      strokeWidth={1}
+                    />
+                  ))}
+                </Pie>
+                {/* Esconde a legenda original */}
+                <Legend content={(props: any) => null} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
           {/* Coluna 2: A Legenda Customizada */}
-          <div className="flex w-full flex-col justify-center space-y-4 md:w-1/3">
+          {/* Mobile: 'h-auto' (altura automática, flui abaixo do gráfico)
+            Desktop: 'h-full' (preenche os 350px e centra o conteúdo)
+          */}
+          <div className="flex flex-col justify-center space-y-4 md:h-full">
             <CustomLegend
-              payload={chartData.map((entry) => ({
+              payload={chartData.map((entry, index) => ({
                 value: entry.name,
-                color: COLORS[entry.name] || '#8884d8', // Usa o 'name' para a cor
-                payload: entry,
+                color: COLORS[index % COLORS.length],
+                payload: entry, // Passa os dados completos (para o 'total')
               }))}
             />
           </div>
