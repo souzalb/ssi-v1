@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { Prisma, Role, Status, Priority } from '@prisma/client';
-import Link from 'next/link';
 import { endOfDay } from 'date-fns'; // Importar 'endOfDay'
 
 // Componentes da Página
@@ -15,9 +14,10 @@ import { columns, TicketComRelacoes } from './columns';
 import { Ticket, FolderKanban, Clock, CheckCircle } from 'lucide-react';
 import db from '@/app/_lib/prisma'; // (O seu caminho para o Prisma)
 import { StatCard } from '@/app/_components/stat-card'; // (Ajuste este caminho se necessário)
-import { Button } from '@/app/_components/ui/button';
 
-// Props que a página recebe (agora inclui todos os filtros)
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Props que a página recebe (agora inclui 'technician')
 interface TicketsPageProps {
   searchParams: Promise<{
     status?: Status;
@@ -26,8 +26,9 @@ interface TicketsPageProps {
     search?: string;
     sort?: string;
     order?: 'asc' | 'desc';
-    startDate?: string; // (string da URL)
-    endDate?: string; // (string da URL)
+    startDate?: string;
+    endDate?: string;
+    technician?: string; // Filtro de Técnico
   }>;
 }
 
@@ -41,7 +42,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     redirect('/login');
   }
 
-  const { id: userId, role, areaId, name } = session.user;
+  const { id: userId, role, areaId } = session.user;
 
   // 1.2. Validar Parâmetros da URL (com 'await' para resolver a Promise)
   const resolvedSearchParams = await searchParams;
@@ -50,14 +51,11 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   const page = parseInt(resolvedSearchParams.page || '1', 10);
   const searchFilter = resolvedSearchParams.search;
   const skip = (page - 1) * ITEMS_PER_PAGE;
-
-  // Parâmetros de Ordenação
-  const sort = resolvedSearchParams.sort || 'createdAt'; // Padrão: createdAt
-  const order = resolvedSearchParams.order || 'desc'; // Padrão: desc
-
-  // Parâmetros de Data
+  const sort = resolvedSearchParams.sort || 'createdAt';
+  const order = resolvedSearchParams.order || 'desc';
   const startDate = resolvedSearchParams.startDate;
   const endDate = resolvedSearchParams.endDate;
+  const technicianFilter = resolvedSearchParams.technician; // <-- Novo
 
   // 1.3. Construir a Cláusula 'where' (RBAC + Filtros)
   let where: Prisma.TicketWhereInput = {};
@@ -97,18 +95,26 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   // Filtro de Data
   const createdAtFilter: Prisma.DateTimeFilter = {};
   if (startDate) {
-    createdAtFilter.gte = new Date(startDate); // Começa no início do dia
+    createdAtFilter.gte = new Date(startDate);
   }
   if (endDate) {
-    createdAtFilter.lte = endOfDay(new Date(endDate)); // Termina no FIM do dia
+    createdAtFilter.lte = endOfDay(new Date(endDate));
   }
   if (startDate || endDate) {
     where.createdAt = createdAtFilter;
   }
 
+  // Filtro de Técnico
+  if (technicianFilter) {
+    if (technicianFilter === 'unassigned') {
+      where.technicianId = null;
+    } else {
+      where.technicianId = technicianFilter;
+    }
+  }
+
   // 1.4. Construir a Cláusula 'orderBy'
   const orderBy: Prisma.TicketOrderByWithRelationInput = {};
-  // Mapeamento seguro para os campos que permitimos ordenar
   if (
     sort === 'id' ||
     sort === 'title' ||
@@ -125,7 +131,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   const statsQuery = db.ticket.groupBy({
     by: ['status'],
     _count: { _all: true },
-    where: where, // Usa o 'where' completo
+    where: where,
   });
 
   const totalTicketsQuery = db.ticket.count({
@@ -144,10 +150,33 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     skip: skip,
   });
 
-  const [stats, totalTickets, tickets] = await Promise.all([
+  // Query (Nova) para buscar a lista de técnicos (com RBAC)
+  let technicianListQuery: Promise<any[]>;
+  if (role === Role.SUPER_ADMIN) {
+    technicianListQuery = db.user.findMany({
+      where: { role: Role.TECHNICIAN },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  } else if (role === Role.MANAGER) {
+    technicianListQuery = db.user.findMany({
+      where: {
+        role: Role.TECHNICIAN,
+        areaId: areaId,
+      },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  } else {
+    technicianListQuery = Promise.resolve([]); // Vazio para COMMON/TECHNICIAN
+  }
+
+  // Resolver todas as queries
+  const [stats, totalTickets, tickets, technicianList] = await Promise.all([
     statsQuery,
     totalTicketsQuery,
     ticketsQuery,
+    technicianListQuery,
   ]);
 
   // 1.6. Calcular Paginação e Stats
@@ -168,17 +197,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
 
   return (
     <div className="space-y-6 p-8">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciador de Chamados</h1>
-          <p className="text-muted-foreground">
-            Olá, {name}! Bem-vindo(a) de volta.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/tickets/new">Abrir Novo Chamado</Link>
-        </Button>
-      </header>
+      <h1 className="text-3xl font-bold">Gerenciador de Chamados</h1>
 
       {/* 2. Cards de Estatísticas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -208,6 +227,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
       <TicketFilters
         statuses={Object.values(Status)}
         priorities={Object.values(Priority)}
+        technicians={technicianList}
       />
 
       {/* 4. Lista de Chamados (Data Table) */}

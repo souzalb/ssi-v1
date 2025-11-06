@@ -19,13 +19,18 @@ import { X } from 'lucide-react';
 import { useDebounce } from '../../../../hooks/use-debounce';
 import { DatePicker } from '@/app/_components/date-picker';
 
-// Props que este componente recebe (os Enums vêm do Server Component)
+// Props que este componente recebe (incluindo técnicos)
 interface TicketFiltersProps {
   statuses: string[];
   priorities: string[];
+  technicians: { id: string; name: string }[];
 }
 
-export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
+export function TicketFilters({
+  statuses,
+  priorities,
+  technicians,
+}: TicketFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -51,11 +56,11 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
   // Valores atuais dos Selects (lidos da URL)
   const currentStatus = searchParams.get('status') || 'all';
   const currentPriority = searchParams.get('priority') || 'all';
+  const currentTechnician = searchParams.get('technician') || 'all';
 
   // --- Lógica de Atualização da URL ---
 
   // Função auxiliar para criar a query string
-  // (Usada pelos Selects e pela Pesquisa)
   const createQueryString = useCallback(
     (params: URLSearchParams, name: string, value: string) => {
       if (value === 'all' || value === '') {
@@ -71,7 +76,7 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
 
   // Handler para os Selects
   const handleSelectFilterChange = (
-    name: 'status' | 'priority',
+    name: 'status' | 'priority' | 'technician',
     value: string,
   ) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -81,7 +86,6 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
 
   // Efeito para a pesquisa "debounced"
   useEffect(() => {
-    // Apenas atualiza a URL se o termo "debounced" for diferente do que já está na URL
     if (debouncedSearchTerm !== (searchParams.get('search') || '')) {
       const params = new URLSearchParams(searchParams.toString());
       const queryString = createQueryString(
@@ -98,7 +102,6 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
     const params = new URLSearchParams(searchParams.toString());
     let changed = false;
 
-    // Formata a data para 'YYYY-MM-DD' para a URL
     const startDateISO = startDate
       ? formatISO(startDate, { representation: 'date' })
       : null;
@@ -106,7 +109,6 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
       ? formatISO(endDate, { representation: 'date' })
       : null;
 
-    // Verifica se a data mudou em relação à URL
     if (startDateISO !== searchParams.get('startDate')) {
       changed = true;
       if (startDateISO) params.set('startDate', startDateISO);
@@ -118,9 +120,8 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
       else params.delete('endDate');
     }
 
-    // Só atualiza a rota se houver mudança
     if (changed) {
-      params.set('page', '1'); // Reseta a página
+      params.set('page', '1');
       router.push(pathname + '?' + params.toString());
     }
   }, [startDate, endDate, searchParams, pathname, router]);
@@ -133,13 +134,14 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
     router.push(pathname); // Limpa todos os parâmetros da URL
   };
 
-  // Verificação se há filtros ativos (para mostrar o botão "Limpar")
+  // Verificação se há filtros ativos
   const isFiltered =
     searchParams.has('search') ||
     searchParams.has('status') ||
     searchParams.has('priority') ||
     searchParams.has('startDate') ||
-    searchParams.has('endDate');
+    searchParams.has('endDate') ||
+    searchParams.has('technician');
 
   return (
     <div className="space-y-4">
@@ -164,9 +166,9 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
       </div>
 
       {/* --- Linha 2: Filtros de Dropdown (Status, Prioridade, Datas) --- */}
-      <div className="bg-card flex flex-col gap-4 rounded-lg border p-4 md:flex-row">
+      <div className="bg-card grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-3 lg:grid-cols-5">
         {/* Filtro Status */}
-        <div className="flex-1 space-y-2">
+        <div className="space-y-2">
           <Label>Status</Label>
           <Select
             value={currentStatus}
@@ -187,7 +189,7 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
         </div>
 
         {/* Filtro Prioridade */}
-        <div className="flex-1 space-y-2">
+        <div className="space-y-2">
           <Label>Prioridade</Label>
           <Select
             value={currentPriority}
@@ -209,8 +211,34 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
           </Select>
         </div>
 
+        {/* Filtro de Técnico (Condicional) */}
+        {technicians.length > 0 && (
+          <div className="space-y-2">
+            <Label>Técnico</Label>
+            <Select
+              value={currentTechnician}
+              onValueChange={(value) =>
+                handleSelectFilterChange('technician', value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por técnico..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Técnicos</SelectItem>
+                <SelectItem value="unassigned">Não Atribuídos</SelectItem>
+                {technicians.map((tech) => (
+                  <SelectItem key={tech.id} value={tech.id}>
+                    {tech.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Filtro Data Inicial */}
-        <div className="flex-1 space-y-2">
+        <div className="space-y-2">
           <Label>Data Inicial</Label>
           <DatePicker
             date={startDate}
@@ -220,7 +248,7 @@ export function TicketFilters({ statuses, priorities }: TicketFiltersProps) {
         </div>
 
         {/* Filtro Data Final */}
-        <div className="flex-1 space-y-2">
+        <div className="space-y-2">
           <Label>Data Final</Label>
           <DatePicker
             date={endDate}
