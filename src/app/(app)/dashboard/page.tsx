@@ -193,7 +193,7 @@ export default async function DashboardPage() {
       satisfactionRating: true,
     },
     _count: {
-      satisfactionRating: true,
+      _all: true,
     },
     where: {
       ...where,
@@ -290,7 +290,7 @@ export default async function DashboardPage() {
 
   const averageSatisfaction =
     avgRatingResult._avg.satisfactionRating?.toFixed(1) || 'N/A';
-  const totalRatings = avgRatingResult._count.satisfactionRating;
+  const totalRatings = avgRatingResult._count._all;
 
   // 4.4. Dados de Tendência
   const trendData = formatTrendData(performanceData);
