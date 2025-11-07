@@ -2,32 +2,14 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { Prisma, Role, Status, Priority } from '@prisma/client';
-import db from '@/app/_lib/prisma'; // (A usar o seu caminho)
+import db from '@/app/_lib/prisma';
 import Link from 'next/link';
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// --- 1. IMPORTAR FUNÇÕES DA DATE-FNS ---
 import { subMonths, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-// --- Componentes ---
-import { Button } from '@/app/_components/ui/button'; // (A usar o seu caminho)
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/app/_components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/app/_components/ui/table';
-import { Badge } from '@/app/_components/ui/badge';
+import { Button } from '@/app/_components/ui/button';
 import {
   Ticket,
   FolderKanban,
@@ -37,12 +19,16 @@ import {
   Timer,
   CalendarCheck,
   MessageSquare,
+  RefreshCcw,
+  TicketPlusIcon,
+  PauseIcon,
 } from 'lucide-react';
 import { StatusChart } from './status-chart';
 import { PriorityChart } from './priority-chart';
-import { TrendChart } from './trend-chart'; // <-- Gráfico de Tendência
+import { TrendChart } from './trend-chart';
 import { StatCard } from '@/app/_components/stat-card';
 import { AreaChart } from './area-chart';
+import { RecentTicketsCard } from './recents-tickets-card';
 
 type TicketWithRequester = Prisma.TicketGetPayload<{
   include: { requester: { select: { name: true } } };
@@ -53,7 +39,7 @@ function calculatePerformanceMetrics(
   tickets: {
     createdAt: Date;
     resolvedAt: Date | null;
-    slaDeadline: Date | null; // Inclui o SLA
+    slaDeadline: Date | null;
   }[],
 ) {
   if (tickets.length === 0) {
@@ -62,18 +48,16 @@ function calculatePerformanceMetrics(
 
   let totalDurationMs = 0;
   let resolvedCount = 0;
-  let resolvedOnTimeCount = 0; // Contador para SLA
+  let resolvedOnTimeCount = 0;
 
   for (const ticket of tickets) {
     if (ticket.resolvedAt) {
       resolvedCount++;
 
-      // 1. Cálculo do Tempo Médio
       const durationMs =
         ticket.resolvedAt.getTime() - ticket.createdAt.getTime();
       totalDurationMs += durationMs;
 
-      // 2. Cálculo da Taxa de SLA
       if (ticket.slaDeadline && ticket.resolvedAt <= ticket.slaDeadline) {
         resolvedOnTimeCount++;
       }
@@ -84,12 +68,10 @@ function calculatePerformanceMetrics(
     return { avgTime: 'N/A', slaRate: 'N/A', totalResolved: 0 };
   }
 
-  // Formata o Tempo Médio
   const avgMs = totalDurationMs / resolvedCount;
   const avgDays = avgMs / (1000 * 60 * 60 * 24);
   const avgTime = `${avgDays.toFixed(1)} dias`;
 
-  // Formata a Taxa de SLA
   const rate = (resolvedOnTimeCount / resolvedCount) * 100;
   const slaRate = `${rate.toFixed(1)}%`;
 
@@ -101,22 +83,18 @@ function formatTrendData(
   tickets: { createdAt: Date; resolvedAt: Date | null }[],
 ) {
   const now = new Date();
-  // Inicializa um mapa para os últimos 12 meses
   const dataMap = new Map<
     string,
     { month: string; Novos: number; Resolvidos: number }
   >();
 
-  // Preenche o mapa com os 12 meses (ex: "Out/25", "Set/25", ...)
   for (let i = 11; i >= 0; i--) {
     const date = subMonths(now, i);
-    const monthKey = format(date, 'MMM/yy', { locale: ptBR }); // "Nov/25"
+    const monthKey = format(date, 'MMM/yy', { locale: ptBR });
     dataMap.set(monthKey, { month: monthKey, Novos: 0, Resolvidos: 0 });
   }
 
-  // Processa os tickets da query
   for (const ticket of tickets) {
-    // 1. Processa os "Novos" (por createdAt)
     const createdMonthKey = format(ticket.createdAt, 'MMM/yy', {
       locale: ptBR,
     });
@@ -124,7 +102,6 @@ function formatTrendData(
       dataMap.get(createdMonthKey)!.Novos++;
     }
 
-    // 2. Processa os "Resolvidos" (por resolvedAt)
     if (ticket.resolvedAt) {
       const resolvedMonthKey = format(ticket.resolvedAt, 'MMM/yy', {
         locale: ptBR,
@@ -135,12 +112,33 @@ function formatTrendData(
     }
   }
 
-  // Retorna apenas os valores do mapa, na ordem correta
   return Array.from(dataMap.values());
 }
 
+// --- Função Auxiliar 3 (para calcular Trends) ---
+function calculateTrend(
+  currentPeriodData: any[],
+  previousPeriodData: any[],
+  filterFn: (item: any) => boolean,
+): { value: number; isPositive: boolean } | undefined {
+  const currentCount = currentPeriodData.filter(filterFn).length;
+  const previousCount = previousPeriodData.filter(filterFn).length;
+
+  if (previousCount === 0) return undefined;
+
+  const percentChange = ((currentCount - previousCount) / previousCount) * 100;
+
+  return {
+    value: Math.abs(Math.round(percentChange)),
+    isPositive: percentChange >= 0,
+  };
+}
+
 export default async function DashboardPage() {
-  // 1. Obter a sessão
+  const formattedDate = format(new Date(), 'dd/MM/yyyy, HH:mm', {
+    locale: ptBR,
+  });
+
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
     redirect('/login');
@@ -148,7 +146,6 @@ export default async function DashboardPage() {
 
   const { id, role, name, areaId } = session.user;
 
-  // 2. Definir a Cláusula 'where' do RBAC (Role-Based Access Control)
   let where: Prisma.TicketWhereInput = {};
 
   if (role === Role.COMMON) {
@@ -163,31 +160,26 @@ export default async function DashboardPage() {
     }
   }
 
-  // --- 3. BUSCA DE DADOS OTIMIZADA (Promise.all) ---
-
-  // Query 1: A lista de chamados (5 recentes)
+  // --- QUERIES ---
   const ticketsQuery = db.ticket.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: 5,
-    include: { requester: { select: { name: true } } },
+    include: { requester: { select: { name: true } }, area: true },
   });
 
-  // Query 2: As estatísticas por Status (para os gráficos)
   const statsQuery = db.ticket.groupBy({
     by: ['status'],
     _count: { _all: true },
     where: where,
   });
 
-  // Query 3: As estatísticas por Prioridade (para os gráficos)
   const priorityStatsQuery = db.ticket.groupBy({
     by: ['priority'],
     _count: { _all: true },
     where: where,
   });
 
-  // Query 4: Média de Satisfação e Contagem
   const avgRatingQuery = db.ticket.aggregate({
     _avg: {
       satisfactionRating: true,
@@ -201,13 +193,11 @@ export default async function DashboardPage() {
     },
   });
 
-  // Query 5: Dados para Performance e Tendência (Últimos 12 meses)
   const oneYearAgo = subMonths(new Date(), 12);
   const performanceDataQuery = db.ticket.findMany({
     where: {
-      ...where, // Aplica o RBAC
+      ...where,
       OR: [
-        // Pega chamados CRIADOS OU RESOLVIDOS no último ano
         { createdAt: { gte: oneYearAgo } },
         { resolvedAt: { gte: oneYearAgo } },
       ],
@@ -216,17 +206,37 @@ export default async function DashboardPage() {
       createdAt: true,
       resolvedAt: true,
       slaDeadline: true,
+      status: true,
     },
   });
-  // --- 3.1.Query 6 (Condicional para Super Admin) ---
+
+  // Queries para calcular trends
+  const twoMonthsAgo = subMonths(new Date(), 2);
+  const oneMonthAgo = subMonths(new Date(), 1);
+
+  const currentPeriodDataQuery = db.ticket.findMany({
+    where: {
+      ...where,
+      createdAt: { gte: oneMonthAgo },
+    },
+    select: { status: true, createdAt: true, resolvedAt: true },
+  });
+
+  const previousPeriodDataQuery = db.ticket.findMany({
+    where: {
+      ...where,
+      createdAt: { gte: twoMonthsAgo, lt: oneMonthAgo },
+    },
+    select: { status: true, createdAt: true, resolvedAt: true },
+  });
+
   let areaStatsQuery: Promise<any[]>;
 
   if (role === Role.SUPER_ADMIN) {
-    // Se for Super Admin, busca a contagem de tickets por área
     areaStatsQuery = db.area.findMany({
       include: {
         _count: {
-          select: { tickets: true }, // Conta os tickets em cada área
+          select: { tickets: true },
         },
       },
       orderBy: {
@@ -234,30 +244,30 @@ export default async function DashboardPage() {
       },
     });
   } else {
-    // Se não for admin, apenas resolve uma promise vazia
     areaStatsQuery = Promise.resolve([]);
   }
 
-  // --- 3.2. ATUALIZAR O PROMISE.ALL ---
   const [
     tickets,
     stats,
     priorityStats,
     avgRatingResult,
     performanceData,
-    areaStats, // <-- 3.3. Adiciona o resultado
+    areaStats,
+    currentPeriodData,
+    previousPeriodData,
   ] = await Promise.all([
     ticketsQuery,
     statsQuery,
     priorityStatsQuery,
     avgRatingQuery,
     performanceDataQuery,
-    areaStatsQuery, // <-- 3.4. Adiciona a query
+    areaStatsQuery,
+    currentPeriodDataQuery,
+    previousPeriodDataQuery,
   ]);
 
-  // --- 4. Formatar os dados das Estatísticas ---
-
-  // 4.1. Stats de Status (Operacionais)
+  // --- FORMATAÇÃO DOS DADOS ---
   const formattedStats = {
     [Status.OPEN]: 0,
     [Status.ASSIGNED]: 0,
@@ -273,7 +283,6 @@ export default async function DashboardPage() {
     totalTickets += group._count._all;
   }
 
-  // 4.2. Stats de Prioridade (Gráfico)
   const formattedPriorityStats = Object.values(Priority).map((p) => ({
     name: p,
     total: 0,
@@ -283,7 +292,6 @@ export default async function DashboardPage() {
     if (item) item.total = group._count._all;
   }
 
-  // 4.3. Métricas de Performance
   const resolvedTickets = performanceData.filter((t) => t.resolvedAt);
   const { avgTime, slaRate, totalResolved } =
     calculatePerformanceMetrics(resolvedTickets);
@@ -292,18 +300,47 @@ export default async function DashboardPage() {
     avgRatingResult._avg.satisfactionRating?.toFixed(1) || 'N/A';
   const totalRatings = avgRatingResult._count._all;
 
-  // 4.4. Dados de Tendência
   const trendData = formatTrendData(performanceData);
 
-  // (Formata os dados que o Gráfico de Rosca espera)
   const formattedAreaStats = areaStats.map((area) => ({
     name: area.name,
     total: area._count.tickets,
   }));
 
-  // --- 5. O JSX (Layout de 3 Secções) ---
+  // Calcular Trends dos Cards
+  const totalTrend = calculateTrend(
+    currentPeriodData,
+    previousPeriodData,
+    () => true,
+  );
+
+  const newTicketsTrend = calculateTrend(
+    currentPeriodData,
+    previousPeriodData,
+    (t) => t.status === Status.OPEN,
+  );
+
+  const inProgressTrend = calculateTrend(
+    currentPeriodData,
+    previousPeriodData,
+    (t) => t.status === Status.IN_PROGRESS || t.status === Status.ASSIGNED,
+  );
+
+  const resolvedTrend = calculateTrend(
+    currentPeriodData,
+    previousPeriodData,
+    (t) => t.status === Status.RESOLVED,
+  );
+
+  const onHoldTrend = calculateTrend(
+    currentPeriodData,
+    previousPeriodData,
+    (t) => t.status === Status.ON_HOLD,
+  );
+
   return (
-    <div className="p-8">
+    <div className="p-8 pt-6">
+      {/* <AutoRefresher interval={300000} /> */}
       <header className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -311,39 +348,57 @@ export default async function DashboardPage() {
             Olá, {name}! Bem-vindo(a) de volta.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/tickets/new">Abrir Novo Chamado</Link>
-        </Button>
+        <div className="text-muted-foreground flex flex-col items-end space-y-2 text-sm">
+          <Button asChild>
+            <Link href="/tickets/new">
+              <TicketPlusIcon className="h-4 w-4" />
+              Abrir Novo Chamado
+            </Link>
+          </Button>
+          <div className="flex items-center">
+            <RefreshCcw className="animation-duration-[5s] mr-1.5 h-4 w-4 animate-spin" />
+            <span>Última atualização: {formattedDate}</span>
+          </div>
+        </div>
       </header>
 
       {/* --- SECÇÃO 1: MÉTRICAS OPERACIONAIS --- */}
-      <h2 className="mb-4 text-2xl font-semibold">Visão Operacional</h2>
-      <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <h2 className="mb-4 text-xl font-semibold">Visão Operacional</h2>
+      <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
-          title="Total de Chamados (Fila)"
+          title="Total de Chamados"
           value={totalTickets}
-          icon={<Ticket className="text-muted-foreground h-4 w-4" />}
+          icon={<Ticket className="h-5 w-5" />}
+          trend={totalTrend}
         />
         <StatCard
-          title="Chamados Abertos"
+          title="Novos Chamados"
           value={formattedStats.OPEN}
-          icon={<FolderKanban className="text-muted-foreground h-4 w-4" />}
+          icon={<FolderKanban className="h-5 w-5" />}
+          trend={newTicketsTrend}
         />
         <StatCard
           title="Em Andamento"
           value={formattedStats.IN_PROGRESS + formattedStats.ASSIGNED}
-          icon={<Clock className="text-muted-foreground h-4 w-4" />}
+          icon={<Clock className="h-5 w-5" />}
+          trend={inProgressTrend}
         />
         <StatCard
-          title="Resolvidos (na fila)"
+          title="Em Espera"
+          value={formattedStats.ON_HOLD}
+          icon={<PauseIcon className="h-5 w-5" />}
+          trend={onHoldTrend}
+        />
+        <StatCard
+          title="Resolvidos"
           value={formattedStats.RESOLVED}
-          icon={<CheckCircle className="text-muted-foreground h-4 w-4" />}
+          icon={<CheckCircle className="h-5 w-5" />}
+          trend={resolvedTrend}
         />
       </div>
 
       {/* --- SECÇÃO 2: GRÁFICOS E CHAMADOS RECENTES --- */}
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Coluna da Esquerda (Gráficos) */}
         <div className="space-y-6 lg:col-span-2">
           <TrendChart data={trendData} />
           <StatusChart data={formattedStats} />
@@ -351,55 +406,18 @@ export default async function DashboardPage() {
           {role === Role.SUPER_ADMIN && <AreaChart data={formattedAreaStats} />}
         </div>
 
-        {/* Coluna da Direita (Chamados Recentes) */}
         <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Chamados Recentes</CardTitle>
-              <CardDescription>
-                Os 5 chamados mais recentes na sua fila.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tickets.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={2} className="text-center">
-                        Nenhum chamado encontrado.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {tickets.map((ticket) => (
-                    <TableRow key={ticket.id}>
-                      <TableCell className="font-medium">
-                        <Link
-                          href={`/tickets/${ticket.id}`}
-                          className="hover:underline"
-                        >
-                          {ticket.title}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{ticket.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="mt-4 flex justify-end">
-                <Button asChild variant="link">
-                  <Link href="/tickets">Ver todos os chamados &rarr;</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <RecentTicketsCard
+            tickets={tickets.map((ticket) => ({
+              id: ticket.id,
+              title: ticket.title,
+              status: ticket.status,
+              createdAt: ticket.createdAt,
+              priority: ticket.priority,
+              requesterName: ticket.requester.name,
+              department: ticket.area.name,
+            }))}
+          />
         </div>
       </div>
 
@@ -409,24 +427,24 @@ export default async function DashboardPage() {
         <StatCard
           title="Tempo Médio de Resolução"
           value={avgTime}
-          icon={<Timer className="text-muted-foreground h-4 w-4" />}
+          icon={<Timer className="h-5 w-5" />}
         />
         <StatCard
           title="Satisfação Média"
           value={
             averageSatisfaction === 'N/A' ? 'N/A' : `${averageSatisfaction}/5.0`
           }
-          icon={<Star className="text-muted-foreground h-4 w-4" />}
+          icon={<Star className="h-5 w-5" />}
         />
         <StatCard
           title="Taxa de Resolução (SLA)"
           value={slaRate}
-          icon={<CalendarCheck className="text-muted-foreground h-4 w-4" />}
+          icon={<CalendarCheck className="h-5 w-5" />}
         />
         <StatCard
           title="Total de Avaliações"
           value={totalRatings}
-          icon={<MessageSquare className="text-muted-foreground h-4 w-4" />}
+          icon={<MessageSquare className="h-5 w-5" />}
         />
       </div>
     </div>

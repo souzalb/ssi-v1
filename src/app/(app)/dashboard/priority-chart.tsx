@@ -1,26 +1,16 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-} from 'recharts';
-
-// Importa os componentes do shadcn para o "invólucro"
+import { AlertTriangle, Activity } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/app/_components/ui/card'; // (Ajuste o caminho se necessário)
+} from '@/app/_components/ui/card';
 
-// Props: O Server Component vai passar os dados já formatados
 interface PriorityChartProps {
   data: {
     name: string;
@@ -28,35 +18,83 @@ interface PriorityChartProps {
   }[];
 }
 
-// 1. Mapeamento de Cores para as Prioridades (a sua lógica original, está correta)
-const COLORS: { [key: string]: string } = {
-  LOW: '#3b82f6', // Azul (blue-500)
-  MEDIUM: '#eab308', // Amarelo (yellow-500)
-  HIGH: '#f97316', // Laranja (orange-500)
-  URGENT: '#ef4444', // Vermelho (red-500)
+// Mapeamento de cores e configurações modernizadas para cada prioridade
+const PRIORITY_CONFIG: {
+  [key: string]: {
+    color: string;
+    gradient: string;
+    label: string;
+    icon: string;
+  };
+} = {
+  LOW: {
+    color: '#3b82f6',
+    gradient: 'from-blue-400 to-indigo-600',
+    label: 'Baixa',
+    icon: '🟢',
+  },
+  MEDIUM: {
+    color: '#eab308',
+    gradient: 'from-yellow-400 to-amber-600',
+    label: 'Média',
+    icon: '🟡',
+  },
+  HIGH: {
+    color: '#f97316',
+    gradient: 'from-orange-400 to-red-500',
+    label: 'Alta',
+    icon: '🟠',
+  },
+  URGENT: {
+    color: '#ef4444',
+    gradient: 'from-red-400 to-rose-600',
+    label: 'Urgente',
+    icon: '🔴',
+  },
 };
 
-// --- 2. NOVO: Tooltip Customizado ---
-
+// Tooltip customizado modernizado
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
+    const config = PRIORITY_CONFIG[data.name] || PRIORITY_CONFIG.LOW;
+
     return (
-      <div className="bg-background rounded-lg border p-3 shadow-sm">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <div className="col-span-2 mb-1">
-            <span className="text-foreground text-sm font-semibold">
-              {data.name}
+      <div className="rounded-xl border-0 bg-white p-4 shadow-2xl backdrop-blur-sm dark:bg-slate-900">
+        <div className="space-y-3">
+          <div className="border-b border-slate-200 pb-2 dark:border-slate-700">
+            <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+              Prioridade
             </span>
           </div>
-          <div className="text-muted-foreground text-sm">Chamados</div>
-          <span className="text-foreground text-right text-sm font-semibold">
-            {data.total}
-          </span>
-          <div className="text-muted-foreground text-sm">Percentagem</div>
-          <span className="text-foreground text-right text-sm font-semibold">
-            {(data.percent * 100).toFixed(1)}%
-          </span>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`h-3 w-3 rounded-full bg-linear-to-br ${config.gradient}`}
+                />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {config.label}
+                </span>
+              </div>
+              <span
+                className={`bg-linear-to-br ${config.gradient} bg-clip-text text-lg font-bold text-transparent`}
+              >
+                {data.total}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-200 pt-2 dark:border-slate-700">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                Percentual
+              </span>
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                {(data.percent * 100).toFixed(1)}%
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -64,35 +102,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-// --- 3. NOVO: Legenda Customizada ---
-const CustomLegend = (props: any) => {
-  const { payload } = props;
-  if (!payload || payload.length === 0) return null;
-
-  return (
-    <div className="flex flex-col space-y-2">
-      {payload.map((entry: any, index: number) => (
-        <div
-          key={`item-${index}`}
-          className="flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <span
-              className="h-3 w-3 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-muted-foreground text-sm">{entry.value}</span>
-          </div>
-          <span className="text-foreground text-sm font-semibold">
-            {entry.payload.total}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// --- 4. NOVO: Rótulo de Percentagem (para dentro da fatia) ---
+// Rótulo de percentagem customizado
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({
   cx,
@@ -101,11 +111,14 @@ const renderCustomizedLabel = ({
   innerRadius,
   outerRadius,
   percent,
+  /* eslint-disable @typescript-eslint/no-explicit-any */
 }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  if (percent < 0.05) return null; // Não mostra rótulo se a fatia for muito pequena
+
+  if (percent < 0.05) return null;
+
   return (
     <text
       x={x}
@@ -113,7 +126,7 @@ const renderCustomizedLabel = ({
       fill="white"
       textAnchor="middle"
       dominantBaseline="central"
-      className="text-xs font-semibold"
+      className="text-xs font-bold drop-shadow-lg"
     >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
@@ -123,84 +136,187 @@ const renderCustomizedLabel = ({
 export function PriorityChart({ data }: PriorityChartProps) {
   const chartData = data.filter((item) => item.total > 0);
 
-  // Empty state (sem alteração)
+  // Calcular totais
+  const totalChamados = chartData.reduce((acc, curr) => acc + curr.total, 0);
+  const prioridadesCriticas = chartData
+    .filter((item) => item.name === 'HIGH' || item.name === 'URGENT')
+    .reduce((acc, curr) => acc + curr.total, 0);
+
   if (chartData.length === 0) {
     return (
-      <Card>
+      <Card className="relative overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
+        <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-emerald-500" />
         <CardHeader>
-          <CardTitle>Chamados por Prioridade</CardTitle>
-          <CardDescription>
-            Distribuição dos chamados pelo nível de prioridade.
+          <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+            Chamados por Prioridade
+          </CardTitle>
+          <CardDescription className="text-sm">
+            Distribuição dos chamados pelo nível de prioridade
           </CardDescription>
         </CardHeader>
         <CardContent className="flex h-[350px] items-center justify-center">
-          <p className="text-muted-foreground">
-            Não há dados de prioridade para exibir.
-          </p>
+          <div className="space-y-2 text-center">
+            <Activity className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-700" />
+            <p className="text-slate-500 dark:text-slate-400">
+              Não há dados de prioridade para exibir
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Chamados por Prioridade</CardTitle>
-        <CardDescription>
-          Distribuição dos chamados pelo nível de prioridade.
-        </CardDescription>
+    <Card className="relative overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
+      {/* Gradient decorativo no topo */}
+      <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-orange-500 to-red-500" />
+
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+              Chamados por Prioridade
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Distribuição dos chamados pelo nível de prioridade
+            </CardDescription>
+          </div>
+
+          {/* Badge com métrica de prioridades críticas */}
+          {prioridadesCriticas > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-linear-to-br from-red-50 to-orange-50 px-3 py-1.5 dark:border-red-800 dark:from-red-950 dark:to-orange-950">
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <span className="text-xs font-medium text-red-700 dark:text-red-300">
+                Críticos
+              </span>
+              <span className="bg-linear-to-br from-red-600 to-orange-600 bg-clip-text text-sm font-bold text-transparent">
+                {prioridadesCriticas}
+              </span>
+            </div>
+          )}
+        </div>
       </CardHeader>
 
-      {/* --- 5. LAYOUT RESPONSIVO ATUALIZADO --- */}
-      <CardContent>
-        {/* Mobile (padrão): 'flex-col'.
-          Desktop ('md:'): 'flex-row' e 'items-center'.
-        */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          {/* Coluna 1: O Gráfico */}
-          {/* Damos altura fixa ao container para evitar avisos */}
-          <ResponsiveContainer width="100%" height={350} className="flex-1">
-            <PieChart>
-              {/* Tooltip Customizado */}
-              <Tooltip content={<CustomTooltip />} />
+      <CardContent className="pt-2">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center">
+          {/* Gráfico de Pizza */}
+          <div className="flex-1">
+            <ResponsiveContainer width="100%" height={350}>
+              <PieChart>
+                <defs>
+                  {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
+                    <linearGradient
+                      key={key}
+                      id={`gradient-priority-${key}`}
+                      x1="0"
+                      y1="0"
+                      x2="1"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor={config.color}
+                        stopOpacity={1}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={config.color}
+                        stopOpacity={0.8}
+                      />
+                    </linearGradient>
+                  ))}
+                </defs>
 
-              {/* O Gráfico de Pizza */}
-              <Pie
-                data={chartData}
-                dataKey="total"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={140} // (Este é um Gráfico de Pizza, sem innerRadius)
-                fill="#8884d8"
-                labelLine={false}
-                label={renderCustomizedLabel} // <-- Rótulo customizado (percentagem)
-              >
-                {/* Aplica as cores corretas (usando a sua lógica de 'name') */}
-                {chartData.map((entry) => (
-                  <Cell
-                    key={`cell-${entry.name}`}
-                    fill={COLORS[entry.name] || '#8884d8'}
-                    stroke="#fff"
-                    strokeWidth={1}
-                  />
-                ))}
-              </Pie>
+                <Tooltip content={<CustomTooltip />} />
 
-              {/* Esconde a legenda original (corrige o aviso 'iconSize') */}
-              <Legend content={(props: any) => null} />
-            </PieChart>
-          </ResponsiveContainer>
+                <Pie
+                  data={chartData}
+                  dataKey="total"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={130}
+                  fill="#8884d8"
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                  strokeWidth={2}
+                  stroke="#fff"
+                >
+                  {chartData.map((entry) => (
+                    <Cell
+                      key={`cell-${entry.name}`}
+                      fill={`url(#gradient-priority-${entry.name})`}
+                    />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
-          {/* Coluna 2: A Legenda Customizada */}
-          <div className="flex w-full flex-col justify-center space-y-4 md:w-1/3">
-            <CustomLegend
-              payload={chartData.map((entry) => ({
-                value: entry.name,
-                color: COLORS[entry.name] || '#8884d8', // Usa o 'name' para a cor
-                payload: entry,
-              }))}
-            />
+          {/* Legenda Customizada Vertical */}
+          <div className="w-full space-y-3 md:w-1/3">
+            {chartData.map((entry) => {
+              const config = PRIORITY_CONFIG[entry.name] || PRIORITY_CONFIG.LOW;
+              const percentage = ((entry.total / totalChamados) * 100).toFixed(
+                1,
+              );
+
+              return (
+                <div
+                  key={entry.name}
+                  className="group cursor-pointer rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-white p-3 transition-all hover:shadow-lg dark:border-slate-800 dark:from-slate-900 dark:to-slate-800"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-4 w-4 rounded-full bg-linear-to-br ${config.gradient} shadow-lg transition-transform group-hover:scale-110`}
+                        style={{ boxShadow: `0 4px 14px 0 ${config.color}30` }}
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                          {config.label}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {percentage}% do total
+                        </span>
+                      </div>
+                    </div>
+                    <span
+                      className={`bg-linear-to-br ${config.gradient} bg-clip-text text-xl font-bold text-transparent`}
+                    >
+                      {entry.total}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Cards de métricas */}
+        <div className="mt-6 grid grid-cols-2 gap-4">
+          <div className="rounded-xl border border-indigo-200 bg-linear-to-br from-indigo-50 to-purple-50 p-4 dark:border-indigo-800 dark:from-indigo-950 dark:to-purple-950">
+            <div className="mb-1 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-xs font-semibold tracking-wider text-indigo-700 uppercase dark:text-indigo-300">
+                Total Geral
+              </span>
+            </div>
+            <div className="bg-linear-to-br from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent">
+              {totalChamados}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-red-200 bg-linear-to-br from-red-50 to-orange-50 p-4 dark:border-red-800 dark:from-red-950 dark:to-orange-950">
+            <div className="mb-1 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <span className="text-xs font-semibold tracking-wider text-red-700 uppercase dark:text-red-300">
+                Alta Prioridade
+              </span>
+            </div>
+            <div className="bg-linear-to-br from-red-600 to-orange-600 bg-clip-text text-2xl font-bold text-transparent">
+              {prioridadesCriticas}
+            </div>
           </div>
         </div>
       </CardContent>
