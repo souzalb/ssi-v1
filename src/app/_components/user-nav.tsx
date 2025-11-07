@@ -1,23 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { signOut } from 'next-auth/react'; // Importa o signOut do client-side
+import { signOut } from 'next-auth/react';
 import { Role } from '@prisma/client';
+
+// --- 1. Importar os ícones ---
+import { User, LogOut, Settings2, MoreHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
-// --- Componentes Shadcn ---
+// --- Componentes Shadcn (assumindo que estão em /components/ui) ---
 
-// Props que o componente recebe do Header (Server Component)
+// Props (sem alteração)
 interface UserNavProps {
   name: string;
   email: string;
@@ -26,7 +29,7 @@ interface UserNavProps {
 }
 
 export function UserNav({ name, email, role, imageUrl }: UserNavProps) {
-  // Pega as iniciais do nome para o AvatarFallback
+  // Pega as iniciais do nome para o AvatarFallback (sem alteração)
   const initials = name
     .split(' ')
     .map((n) => n[0])
@@ -36,47 +39,87 @@ export function UserNav({ name, email, role, imageUrl }: UserNavProps) {
 
   return (
     <DropdownMenu>
+      {/* --- 2. O NOVO GATILHO (TRIGGER) --- */}
+      {/* (Inspirado no layout do 'SidebarMenuButton' do seu exemplo) */}
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
+        <Button
+          variant="ghost"
+          // O 'h-auto' permite que o botão se ajuste ao conteúdo
+          // O 'p-2' dá um bom espaçamento
+          className="flex h-auto w-full justify-start gap-3 p-2"
+        >
+          {/* Avatar (com tamanho ligeiramente menor) */}
+          <Avatar className="h-9 w-9">
             <AvatarImage src={imageUrl || ''} alt={name} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
-          <div className="ml-2 hidden flex-col items-start md:flex">
-            <p className="text-sm font-medium">{name}</p>
-            <p className="text-muted-foreground text-xs">{email}</p>
+
+          {/* Nome e Email (escondidos em ecrãs pequenos 'hidden md:grid') */}
+          <div className="hidden flex-1 grid-cols-1 text-left text-sm leading-tight md:grid">
+            <span className="truncate font-medium">{name}</span>
+            <span className="text-muted-foreground truncate text-xs">
+              {email}
+            </span>
           </div>
+
+          {/* Ícone de "Mais Opções" (escondido em ecrãs pequenos) */}
+          <MoreHorizontal className="text-muted-foreground ml-auto hidden size-4 md:block" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+
+      {/* --- 3. O NOVO CONTEÚDO DO MENU --- */}
+      <DropdownMenuContent
+        className="min-w-56 rounded-lg" // (Estilo do seu exemplo)
+        align="end"
+        sideOffset={4}
+      >
+        {/* Etiqueta do Menu (como no seu exemplo) */}
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm leading-none font-medium">{name}</p>
-            <p className="text-muted-foreground text-xs leading-none">
-              {email}
-            </p>
+          <div className="flex items-center gap-3 px-1 py-1.5 text-left text-sm">
+            <Avatar className="h-9 w-9">
+              <AvatarImage src={imageUrl || ''} alt={name} />
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">{name}</span>
+              <span className="text-muted-foreground truncate text-xs">
+                {email}
+              </span>
+            </div>
           </div>
         </DropdownMenuLabel>
+
         <DropdownMenuSeparator />
 
-        {/* Link Condicional para Admin */}
-        {role === Role.SUPER_ADMIN && (
+        <DropdownMenuGroup>
+          {/* Link Condicional para Admin (com ícone) */}
+          {role === Role.SUPER_ADMIN && (
+            <DropdownMenuItem asChild>
+              <Link href="/admin/users">
+                <Settings2 className="mr-2 h-4 w-4" />
+                <span>Gerir Utilizadores</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
+
+          {/* Link para Configurações (com ícone) */}
           <DropdownMenuItem asChild>
-            <Link href="/admin/users">Gerenciar Usuários</Link>
+            <Link href="/settings" className="cursor-pointer">
+              <User className="mr-2 h-4 w-4" />
+              <span>Minha Conta</span>
+            </Link>
           </DropdownMenuItem>
-        )}
-
-        <DropdownMenuItem asChild>
-          <Link href="/settings">Configurações</Link>
-        </DropdownMenuItem>
+        </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
+        {/* Sair (com ícone) */}
         <DropdownMenuItem
-          onClick={() => signOut({ callbackUrl: '/login' })} // Redireciona para o login
-          className="text-red-600 focus:bg-red-50 focus:text-red-600"
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="cursor-pointer focus:bg-red-50 focus:text-red-600"
         >
-          Sair
+          <LogOut className="mr-2 h-4 w-4 focus:text-red-600" />
+          <span>Sair</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

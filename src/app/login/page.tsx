@@ -15,6 +15,8 @@ export default function LoginPage() {
         src="https://images.unsplash.com/photo-1548092372-0d1bd40894a3?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=2070"
         alt="Imagem de fundo de tecnologia"
         className="absolute inset-0 z-[-2] h-full w-full object-cover"
+        width={1920}
+        height={1080}
       />
       {/* O Overlay escuro (para legibilidade) */}
       <div className="absolute inset-0 z-[-1] h-full w-full bg-black/70" />
