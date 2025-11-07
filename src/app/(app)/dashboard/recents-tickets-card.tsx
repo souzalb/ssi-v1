@@ -193,18 +193,18 @@ const TicketItem = ({ ticket }: { ticket: Ticket; index: number }) => {
 // Componente principal
 export function RecentTicketsCard({ tickets }: RecentTicketsCardProps) {
   return (
-    <Card className="relative overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
+    <Card className="relative min-h-[675px] overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
       {/* Gradient decorativo no topo */}
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-emerald-500" />
 
-      <CardHeader className="pb-4">
+      <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
               Chamados Recentes
             </CardTitle>
             <CardDescription className="text-sm">
-              Os 5 chamados mais recentes na sua fila
+              Os 4 chamados mais recentes na sua fila
             </CardDescription>
           </div>
 
@@ -221,7 +221,7 @@ export function RecentTicketsCard({ tickets }: RecentTicketsCardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="pt-2">
+      <CardContent>
         {/* Estado vazio */}
         {tickets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -238,14 +238,14 @@ export function RecentTicketsCard({ tickets }: RecentTicketsCardProps) {
         ) : (
           <>
             {/* Lista de tickets */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {tickets.map((ticket, index) => (
                 <TicketItem key={ticket.id} ticket={ticket} index={index} />
               ))}
             </div>
 
             {/* Botão de ver todos */}
-            <div className="mt-6 flex justify-center">
+            <div className="mt-5 flex justify-center">
               <Button
                 asChild
                 variant="outline"

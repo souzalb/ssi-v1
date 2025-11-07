@@ -29,6 +29,7 @@ import { TrendChart } from './trend-chart';
 import { StatCard } from '@/app/_components/stat-card';
 import { AreaChart } from './area-chart';
 import { RecentTicketsCard } from './recents-tickets-card';
+import { PerformanceMetrics } from './performance-metrics';
 
 type TicketWithRequester = Prisma.TicketGetPayload<{
   include: { requester: { select: { name: true } } };
@@ -164,7 +165,7 @@ export default async function DashboardPage() {
   const ticketsQuery = db.ticket.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    take: 5,
+    take: 4,
     include: { requester: { select: { name: true } }, area: true },
   });
 
@@ -338,6 +339,198 @@ export default async function DashboardPage() {
     (t) => t.status === Status.ON_HOLD,
   );
 
+  // Adicione essas funções auxiliares no seu arquivo de dashboard
+
+  // --- Função Auxiliar 4 (calcula trend do tempo médio de resolução) ---
+  function calculateAvgTimeTrend(
+    currentPeriodData: any[],
+    previousPeriodData: any[],
+  ): number | undefined {
+    const calculateAvgDays = (data: any[]) => {
+      const resolved = data.filter((t) => t.resolvedAt);
+      if (resolved.length === 0) return null;
+
+      const totalMs = resolved.reduce((sum, t) => {
+        return (
+          sum +
+          (new Date(t.resolvedAt!).getTime() - new Date(t.createdAt).getTime())
+        );
+      }, 0);
+
+      return totalMs / resolved.length / (1000 * 60 * 60 * 24); // em dias
+    };
+
+    const currentAvg = calculateAvgDays(currentPeriodData);
+    const previousAvg = calculateAvgDays(previousPeriodData);
+
+    if (!currentAvg || !previousAvg || previousAvg === 0) return undefined;
+
+    const percentChange = ((currentAvg - previousAvg) / previousAvg) * 100;
+    return Math.round(percentChange);
+  }
+
+  // --- Função Auxiliar 5 (calcula trend da satisfação) ---
+  function calculateSatisfactionTrend(
+    currentPeriodTickets: any[],
+    previousPeriodTickets: any[],
+  ): number | undefined {
+    const calculateAvgRating = async (ticketIds: string[]) => {
+      if (ticketIds.length === 0) return null;
+
+      const result = await db.ticket.aggregate({
+        _avg: { satisfactionRating: true },
+        where: {
+          id: { in: ticketIds },
+          satisfactionRating: { not: null },
+        },
+      });
+
+      return result._avg.satisfactionRating;
+    };
+
+    // Esta função precisa ser async, então vamos modificar a abordagem
+    return undefined; // Por enquanto retorna undefined
+  }
+
+  // --- Função Auxiliar 6 (calcula trend da taxa SLA) ---
+  function calculateSLATrend(
+    currentPeriodData: any[],
+    previousPeriodData: any[],
+  ): number | undefined {
+    const calculateSLARate = (data: any[]) => {
+      const resolved = data.filter((t) => t.resolvedAt && t.slaDeadline);
+      if (resolved.length === 0) return null;
+
+      const onTime = resolved.filter(
+        (t) => new Date(t.resolvedAt!) <= new Date(t.slaDeadline!),
+      );
+
+      return (onTime.length / resolved.length) * 100;
+    };
+
+    const currentRate = calculateSLARate(currentPeriodData);
+    const previousRate = calculateSLARate(previousPeriodData);
+
+    if (currentRate === null || previousRate === null || previousRate === 0) {
+      return undefined;
+    }
+
+    const percentChange = ((currentRate - previousRate) / previousRate) * 100;
+    return Math.round(percentChange);
+  }
+
+  // --- Função Auxiliar 7 (calcula trend de avaliações) ---
+  function calculateRatingsTrend(
+    currentPeriodTickets: string[],
+    previousPeriodTickets: string[],
+  ): { value: number; isPositive: boolean } | undefined {
+    // Usar a mesma lógica de calculateTrend mas para contar avaliações
+    // Por simplicidade, vamos usar o número de tickets como proxy
+    if (previousPeriodTickets.length === 0) return undefined;
+
+    const percentChange =
+      ((currentPeriodTickets.length - previousPeriodTickets.length) /
+        previousPeriodTickets.length) *
+      100;
+
+    return {
+      value: Math.abs(Math.round(percentChange)),
+      isPositive: percentChange >= 0,
+    };
+  }
+
+  // Adicione estas queries junto com as outras
+  const currentPeriodPerformanceQuery = db.ticket.findMany({
+    where: {
+      ...where,
+      createdAt: { gte: oneMonthAgo },
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      resolvedAt: true,
+      slaDeadline: true,
+      satisfactionRating: true,
+    },
+  });
+
+  const previousPeriodPerformanceQuery = db.ticket.findMany({
+    where: {
+      ...where,
+      createdAt: { gte: twoMonthsAgo, lt: oneMonthAgo },
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      resolvedAt: true,
+      slaDeadline: true,
+      satisfactionRating: true,
+    },
+  });
+
+  // No Promise.all, adicione:
+  const [
+    // ... queries existentes ...
+    currentPeriodPerformance,
+    previousPeriodPerformance,
+  ] = await Promise.all([
+    // ... queries existentes ...
+    currentPeriodPerformanceQuery,
+    previousPeriodPerformanceQuery,
+  ]);
+
+  // Calcular os trends de performance
+  const avgTimeTrend = calculateAvgTimeTrend(
+    currentPeriodPerformance,
+    previousPeriodPerformance,
+  );
+
+  const slaTrend = calculateSLATrend(
+    currentPeriodPerformance,
+    previousPeriodPerformance,
+  );
+
+  // Para satisfação, calcule manualmente
+  const currentSatisfaction =
+    currentPeriodPerformance
+      .filter((t) => t.satisfactionRating !== null)
+      .reduce((sum, t) => sum + (t.satisfactionRating || 0), 0) /
+      currentPeriodPerformance.filter((t) => t.satisfactionRating !== null)
+        .length || 0;
+
+  const previousSatisfaction =
+    previousPeriodPerformance
+      .filter((t) => t.satisfactionRating !== null)
+      .reduce((sum, t) => sum + (t.satisfactionRating || 0), 0) /
+      previousPeriodPerformance.filter((t) => t.satisfactionRating !== null)
+        .length || 0;
+
+  const satisfactionTrend =
+    previousSatisfaction > 0
+      ? Math.round(
+          ((currentSatisfaction - previousSatisfaction) /
+            previousSatisfaction) *
+            100,
+        )
+      : undefined;
+
+  // Para ratings
+  const currentRatingsCount = currentPeriodPerformance.filter(
+    (t) => t.satisfactionRating !== null,
+  ).length;
+  const previousRatingsCount = previousPeriodPerformance.filter(
+    (t) => t.satisfactionRating !== null,
+  ).length;
+
+  const ratingsTrend =
+    previousRatingsCount > 0
+      ? Math.round(
+          ((currentRatingsCount - previousRatingsCount) /
+            previousRatingsCount) *
+            100,
+        )
+      : undefined;
+
   return (
     <div className="p-8 pt-6">
       {/* <AutoRefresher interval={300000} /> */}
@@ -363,7 +556,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* --- SECÇÃO 1: MÉTRICAS OPERACIONAIS --- */}
-      <h2 className="mb-4 text-xl font-semibold">Visão Operacional</h2>
+
       <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Total de Chamados"
@@ -398,15 +591,26 @@ export default async function DashboardPage() {
       </div>
 
       {/* --- SECÇÃO 2: GRÁFICOS E CHAMADOS RECENTES --- */}
-      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="space-y-6 lg:col-span-3">
           <TrendChart data={trendData} />
           <StatusChart data={formattedStats} />
-          <PriorityChart data={formattedPriorityStats} />
-          {role === Role.SUPER_ADMIN && <AreaChart data={formattedAreaStats} />}
+
+          <PerformanceMetrics
+            avgTime={avgTime}
+            averageSatisfaction={averageSatisfaction}
+            slaRate={slaRate}
+            totalRatings={totalRatings}
+            trends={{
+              avgTime: avgTimeTrend,
+              satisfaction: satisfactionTrend,
+              slaRate: slaTrend,
+              ratings: ratingsTrend,
+            }}
+          />
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="space-y-6 lg:col-span-2">
           <RecentTicketsCard
             tickets={tickets.map((ticket) => ({
               id: ticket.id,
@@ -419,34 +623,10 @@ export default async function DashboardPage() {
               department: ticket.area.name,
             }))}
           />
-        </div>
-      </div>
 
-      {/* --- SECÇÃO 3: MÉTRICAS DE PERFORMANCE --- */}
-      <h2 className="mb-4 text-2xl font-semibold">Métricas de Performance</h2>
-      <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Tempo Médio de Resolução"
-          value={avgTime}
-          icon={<Timer className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Satisfação Média"
-          value={
-            averageSatisfaction === 'N/A' ? 'N/A' : `${averageSatisfaction}/5.0`
-          }
-          icon={<Star className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Taxa de Resolução (SLA)"
-          value={slaRate}
-          icon={<CalendarCheck className="h-5 w-5" />}
-        />
-        <StatCard
-          title="Total de Avaliações"
-          value={totalRatings}
-          icon={<MessageSquare className="h-5 w-5" />}
-        />
+          <PriorityChart data={formattedPriorityStats} />
+          {role === Role.SUPER_ADMIN && <AreaChart data={formattedAreaStats} />}
+        </div>
       </div>
     </div>
   );

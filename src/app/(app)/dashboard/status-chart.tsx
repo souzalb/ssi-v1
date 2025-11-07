@@ -124,7 +124,7 @@ export function StatusChart({ data }: StatusChartProps) {
 
   if (chartData.length === 0) {
     return (
-      <Card className="relative overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
+      <Card className="relative min-h-[665px] overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
         <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-emerald-500" />
         <CardHeader>
           <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">

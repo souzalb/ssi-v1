@@ -167,7 +167,7 @@ export function PriorityChart({ data }: PriorityChartProps) {
   }
 
   return (
-    <Card className="relative overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
+    <Card className="relative min-h-[665px] overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
       {/* Gradient decorativo no topo */}
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-orange-500 to-red-500" />
 
@@ -294,7 +294,7 @@ export function PriorityChart({ data }: PriorityChartProps) {
         </div>
 
         {/* Cards de métricas */}
-        <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="mt-8 grid grid-cols-2 gap-4">
           <div className="rounded-xl border border-indigo-200 bg-linear-to-br from-indigo-50 to-purple-50 p-4 dark:border-indigo-800 dark:from-indigo-950 dark:to-purple-950">
             <div className="mb-1 flex items-center gap-2">
               <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />

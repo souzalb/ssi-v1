@@ -147,7 +147,7 @@ export function AreaChart({ data }: AreaChartProps) {
   }
 
   return (
-    <Card className="relative overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
+    <Card className="relative min-h-[620px] overflow-hidden border-0 bg-white shadow-xl dark:bg-slate-900">
       {/* Gradient decorativo no topo */}
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-emerald-500" />
 

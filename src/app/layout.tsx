@@ -8,6 +8,7 @@ import { AuthProvider } from './(app)/auth-provider';
 import { ThemeProvider } from './_components/theme-provider';
 import { MobileBottomNav } from './_components/mobile-bottom-nav';
 import { Toaster } from 'sonner';
+import { Footer } from './_components/footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -44,6 +45,12 @@ export default async function RootLayout({
 
             <Toaster richColors />
           </ThemeProvider>
+
+          <Footer
+            companyName="SSI Tech Support"
+            supportEmail="suporte@ssi-techsupport.com"
+            showSocial={true}
+          />
         </AuthProvider>
       </body>
     </html>
