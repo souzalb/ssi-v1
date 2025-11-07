@@ -84,6 +84,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   // Filtro de Pesquisa (OR)
   if (searchFilter) {
     where.OR = [
+      { ticketId: { contains: searchFilter, mode: 'insensitive' } },
       { id: { equals: searchFilter } },
       { title: { contains: searchFilter, mode: 'insensitive' } },
       { description: { contains: searchFilter, mode: 'insensitive' } },

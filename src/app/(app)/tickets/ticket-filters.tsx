@@ -4,7 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useState, useEffect } from 'react';
 import { formatISO } from 'date-fns';
 
-// --- Componentes ---
+// Componentes
 import {
   Select,
   SelectContent,
@@ -15,11 +15,30 @@ import {
 import { Label } from '@/app/_components/ui/label';
 import { Input } from '@/app/_components/ui/input';
 import { Button } from '@/app/_components/ui/button';
-import { X } from 'lucide-react';
+import { Badge } from '@/app/_components/ui/badge';
+import { X, Search, Filter } from 'lucide-react';
 import { useDebounce } from '../../../../hooks/use-debounce';
 import { DatePicker } from '@/app/_components/date-picker';
 
-// Props que este componente recebe (incluindo técnicos)
+// Labels traduzidas para Status
+const statusLabels: Record<string, string> = {
+  OPEN: 'Aberto',
+  ASSIGNED: 'Atribuído',
+  IN_PROGRESS: 'Em Andamento',
+  ON_HOLD: 'Em Espera',
+  RESOLVED: 'Resolvido',
+  CLOSED: 'Fechado',
+  CANCELLED: 'Cancelado',
+};
+
+// Labels traduzidas para Prioridade
+const priorityLabels: Record<string, string> = {
+  LOW: 'Baixa',
+  MEDIUM: 'Média',
+  HIGH: 'Alta',
+  URGENT: 'Urgente',
+};
+
 interface TicketFiltersProps {
   statuses: string[];
   priorities: string[];
@@ -35,7 +54,7 @@ export function TicketFilters({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // --- Estados para os filtros ---
+  // Estados para os filtros
   const [startDate, setStartDate] = useState<Date | undefined>(
     searchParams.get('startDate')
       ? new Date(searchParams.get('startDate')!)
@@ -50,17 +69,15 @@ export function TicketFilters({
     searchParams.get('search') || '',
   );
 
-  // Otimização: Debounce para o campo de pesquisa
+  // Debounce para otimização
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // Valores atuais dos Selects (lidos da URL)
+  // Valores atuais dos filtros
   const currentStatus = searchParams.get('status') || 'all';
   const currentPriority = searchParams.get('priority') || 'all';
   const currentTechnician = searchParams.get('technician') || 'all';
 
-  // --- Lógica de Atualização da URL ---
-
-  // Função auxiliar para criar a query string
+  // Função auxiliar para criar query string
   const createQueryString = useCallback(
     (params: URLSearchParams, name: string, value: string) => {
       if (value === 'all' || value === '') {
@@ -68,7 +85,7 @@ export function TicketFilters({
       } else {
         params.set(name, value);
       }
-      params.set('page', '1'); // Reseta a página em qualquer filtro
+      params.set('page', '1'); // Reseta a página
       return params;
     },
     [],
@@ -84,7 +101,7 @@ export function TicketFilters({
     router.push(pathname + '?' + queryString);
   };
 
-  // Efeito para a pesquisa "debounced"
+  // Efeito para pesquisa debounced
   useEffect(() => {
     if (debouncedSearchTerm !== (searchParams.get('search') || '')) {
       const params = new URLSearchParams(searchParams.toString());
@@ -126,15 +143,15 @@ export function TicketFilters({
     }
   }, [startDate, endDate, searchParams, pathname, router]);
 
-  // Função para Limpar Filtros
+  // Função para limpar filtros
   const handleClearFilters = () => {
     setSearchTerm('');
     setStartDate(undefined);
     setEndDate(undefined);
-    router.push(pathname); // Limpa todos os parâmetros da URL
+    router.push(pathname);
   };
 
-  // Verificação se há filtros ativos
+  // Verificação de filtros ativos
   const isFiltered =
     searchParams.has('search') ||
     searchParams.has('status') ||
@@ -143,120 +160,237 @@ export function TicketFilters({
     searchParams.has('endDate') ||
     searchParams.has('technician');
 
+  // Contagem de filtros ativos
+  const activeFiltersCount = [
+    searchParams.has('search'),
+    searchParams.has('status') && currentStatus !== 'all',
+    searchParams.has('priority') && currentPriority !== 'all',
+    searchParams.has('technician') && currentTechnician !== 'all',
+    searchParams.has('startDate'),
+    searchParams.has('endDate'),
+  ].filter(Boolean).length;
+
   return (
     <div className="space-y-4">
-      {/* --- Linha 1: Pesquisa e Botão Limpar --- */}
+      {/* Linha 1: Pesquisa e Botão Limpar */}
       <div className="flex items-center gap-2">
-        <Input
-          placeholder="Pesquisar por ID, título, equipamento (digite para filtrar...)"
-          className="flex-1"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div className="relative flex-1">
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Input
+            placeholder="Pesquisar por ID do ticket (ex: TK-TI-0001), título ou equipamento..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
         {isFiltered && (
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={handleClearFilters}
-            className="text-muted-foreground"
+            className="gap-2"
           >
-            <X className="mr-2 h-4 w-4" />
-            Limpar Filtros
+            <X className="h-4 w-4" />
+            Limpar
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary" className="ml-1 rounded-full px-2">
+                {activeFiltersCount}
+              </Badge>
+            )}
           </Button>
         )}
       </div>
 
-      {/* --- Linha 2: Filtros de Dropdown (Status, Prioridade, Datas) --- */}
-      <div className="bg-card grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-3 lg:grid-cols-5">
-        {/* Filtro Status */}
-        <div className="space-y-2">
-          <Label>Status</Label>
-          <Select
-            value={currentStatus}
-            onValueChange={(value) => handleSelectFilterChange('status', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por status..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Status</SelectItem>
-              {statuses.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Linha 2: Filtros Avançados */}
+      <div className="bg-card rounded-lg border p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Filter className="text-muted-foreground h-4 w-4" />
+          <h3 className="text-foreground text-sm font-semibold">
+            Filtros Avançados
+          </h3>
         </div>
 
-        {/* Filtro Prioridade */}
-        <div className="space-y-2">
-          <Label>Prioridade</Label>
-          <Select
-            value={currentPriority}
-            onValueChange={(value) =>
-              handleSelectFilterChange('priority', value)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por prioridade..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as Prioridades</SelectItem>
-              {priorities.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Filtro de Técnico (Condicional) */}
-        {technicians.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          {/* Filtro Status */}
           <div className="space-y-2">
-            <Label>Técnico</Label>
+            <Label className="text-xs font-medium">Status</Label>
             <Select
-              value={currentTechnician}
+              value={currentStatus}
               onValueChange={(value) =>
-                handleSelectFilterChange('technician', value)
+                handleSelectFilterChange('status', value)
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Filtrar por técnico..." />
+                <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Técnicos</SelectItem>
-                <SelectItem value="unassigned">Não Atribuídos</SelectItem>
-                {technicians.map((tech) => (
-                  <SelectItem key={tech.id} value={tech.id}>
-                    {tech.name}
+                <SelectItem value="all">Todos os Status</SelectItem>
+                {statuses.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {statusLabels[s] || s}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-        )}
 
-        {/* Filtro Data Inicial */}
-        <div className="space-y-2">
-          <Label>Data Inicial</Label>
-          <DatePicker
-            date={startDate}
-            setDate={setStartDate}
-            placeholder="Selecione a data inicial"
-          />
-        </div>
+          {/* Filtro Prioridade */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Prioridade</Label>
+            <Select
+              value={currentPriority}
+              onValueChange={(value) =>
+                handleSelectFilterChange('priority', value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as prioridades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as Prioridades</SelectItem>
+                {priorities.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {priorityLabels[p] || p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* Filtro Data Final */}
-        <div className="space-y-2">
-          <Label>Data Final</Label>
-          <DatePicker
-            date={endDate}
-            setDate={setEndDate}
-            placeholder="Selecione a data final"
-          />
+          {/* Filtro Técnico */}
+          {technicians.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Técnico Atribuído</Label>
+              <Select
+                value={currentTechnician}
+                onValueChange={(value) =>
+                  handleSelectFilterChange('technician', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os técnicos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Técnicos</SelectItem>
+                  <SelectItem value="unassigned">Não Atribuídos</SelectItem>
+                  {technicians.map((tech) => (
+                    <SelectItem key={tech.id} value={tech.id}>
+                      {tech.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Filtro Data Inicial */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Data Inicial</Label>
+            <DatePicker
+              date={startDate}
+              setDate={setStartDate}
+              placeholder="Selecione a data"
+            />
+          </div>
+
+          {/* Filtro Data Final */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Data Final</Label>
+            <DatePicker
+              date={endDate}
+              setDate={setEndDate}
+              placeholder="Selecione a data"
+            />
+          </div>
         </div>
       </div>
+
+      {/* Badges de Filtros Ativos */}
+      {isFiltered && (
+        <div className="flex flex-wrap gap-2">
+          {searchParams.get('search') && (
+            <Badge variant="secondary" className="gap-1">
+              Busca: {searchParams.get('search')}
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.delete('search');
+                  params.set('page', '1');
+                  router.push(pathname + '?' + params.toString());
+                }}
+                className="hover:bg-secondary-foreground/20 ml-1 rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {currentStatus !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              Status: {statusLabels[currentStatus] || currentStatus}
+              <button
+                onClick={() => handleSelectFilterChange('status', 'all')}
+                className="hover:bg-secondary-foreground/20 ml-1 rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {currentPriority !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              Prioridade: {priorityLabels[currentPriority] || currentPriority}
+              <button
+                onClick={() => handleSelectFilterChange('priority', 'all')}
+                className="hover:bg-secondary-foreground/20 ml-1 rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {currentTechnician !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              Técnico:{' '}
+              {currentTechnician === 'unassigned'
+                ? 'Não Atribuídos'
+                : technicians.find((t) => t.id === currentTechnician)?.name ||
+                  currentTechnician}
+              <button
+                onClick={() => handleSelectFilterChange('technician', 'all')}
+                className="hover:bg-secondary-foreground/20 ml-1 rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {startDate && (
+            <Badge variant="secondary" className="gap-1">
+              De: {formatISO(startDate, { representation: 'date' })}
+              <button
+                onClick={() => setStartDate(undefined)}
+                className="hover:bg-secondary-foreground/20 ml-1 rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {endDate && (
+            <Badge variant="secondary" className="gap-1">
+              Até: {formatISO(endDate, { representation: 'date' })}
+              <button
+                onClick={() => setEndDate(undefined)}
+                className="hover:bg-secondary-foreground/20 ml-1 rounded-full"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+        </div>
+      )}
     </div>
   );
 }

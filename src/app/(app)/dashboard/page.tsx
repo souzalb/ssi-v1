@@ -390,8 +390,8 @@ export default async function DashboardPage() {
           trend={onHoldTrend}
         />
         <StatCard
-          title="Resolvidos"
-          value={formattedStats.RESOLVED}
+          title="Concluídos"
+          value={formattedStats.RESOLVED + formattedStats.CLOSED}
           icon={<CheckCircle className="h-5 w-5" />}
           trend={resolvedTrend}
         />
@@ -410,6 +410,7 @@ export default async function DashboardPage() {
           <RecentTicketsCard
             tickets={tickets.map((ticket) => ({
               id: ticket.id,
+              ticketId: ticket.ticketId,
               title: ticket.title,
               status: ticket.status,
               createdAt: ticket.createdAt,

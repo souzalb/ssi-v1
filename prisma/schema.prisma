@@ -45,28 +45,30 @@ enum AreaName {
 model User {
   id String @id @default(cuid()) // <-- CORREÇÃO: uuid() mudou para cuid()
 
-  email        String    @unique
+  email        String       @unique
   name         String
   passwordHash String
-  role         Role      @default(COMMON)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  role         Role         @default(COMMON)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
   areaId       String?
   photoUrl     String?
   // Relacionamentos
-  area         Area?     @relation(fields: [areaId], references: [id])
-  tickets      Ticket[]  @relation("TicketRequester") // Chamados que abriu
-  assigned     Ticket[]  @relation("TicketTechnician") // Chamados para atender
+  area         Area?        @relation(fields: [areaId], references: [id])
+  tickets      Ticket[]     @relation("TicketRequester") // Chamados que abriu
+  assigned     Ticket[]     @relation("TicketTechnician") // Chamados para atender
   comments     Comment[]
-  uploads  Attachment[]
+  uploads      Attachment[]
 
   @@index([areaId])
   @@map("users")
 }
 
 model Area {
-  id   String   @id @default(cuid())
-  name AreaName @unique
+  id            String   @id @default(cuid())
+  name          AreaName @unique
+  code          String   @unique
+  ticketCounter Int      @default(0)
 
   // Relacionamentos
   users    User[]
@@ -78,10 +80,10 @@ model Area {
 
 model Attachment {
   id        String   @id @default(cuid())
-  filename  String   // Nome original do arquivo (ex: "screenshot.png")
-  url       String   // URL do Vercel Blob
-  fileType  String?  // ex: "image/png"
-  size      Int?     // Tamanho em bytes
+  filename  String // Nome original do arquivo (ex: "screenshot.png")
+  url       String // URL do Vercel Blob
+  fileType  String? // ex: "image/png"
+  size      Int? // Tamanho em bytes
   createdAt DateTime @default(now())
 
   // Relacionamento com o Chamado
@@ -98,9 +100,10 @@ model Attachment {
 }
 
 model Ticket {
-  id     String @id @default(cuid())
-  title  String
-  status Status @default(OPEN)
+  id       String @id @default(cuid())
+  ticketId String @unique
+  title    String
+  status   Status @default(OPEN)
 
   // Detalhes do chamado (obrigatórios)
   description String
@@ -114,8 +117,8 @@ model Ticket {
   updatedAt DateTime @updatedAt
 
   satisfactionRating Int? // Armazena a nota (1-5). É opcional.
-  resolvedAt DateTime? // Armazena a data/hora da primeira resolução
-  slaDeadline DateTime? // Prazo de SLA
+  resolvedAt         DateTime? // Armazena a data/hora da primeira resolução
+  slaDeadline        DateTime? // Prazo de SLA
 
   // Chaves Estrangeiras e Relacionamentos
   areaId String
@@ -127,11 +130,12 @@ model Ticket {
   technicianId String?
   technician   User?   @relation("TicketTechnician", fields: [technicianId], references: [id])
 
-  comments Comment[]
+  comments    Comment[]
   attachments Attachment[]
 
-  @@index([areaId])       
-  @@index([requesterId])  
+  @@index([areaId])
+  @@index([ticketId])
+  @@index([requesterId])
   @@index([technicianId])
   @@map("tickets")
 }
@@ -153,7 +157,7 @@ model Comment {
   area   Area   @relation(fields: [areaId], references: [id])
 
   @@index([ticketId])
-  @@index([userId])   
+  @@index([userId])
   @@index([areaId])
   @@map("comments")
 }

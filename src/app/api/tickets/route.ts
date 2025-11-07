@@ -4,14 +4,16 @@ import { Priority, Role } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import React from 'react';
+import { addBusinessDays } from 'date-fns';
 
-// --- 1. NOVAS IMPORTAÇÕES ---
-import db from '@/app/_lib/prisma'; // (O seu caminho para o Prisma)
-import { fromEmail, resend } from '@/app/_lib/resend'; // (O seu caminho para o Resend)
+import db from '@/app/_lib/prisma';
+import { fromEmail, resend } from '@/app/_lib/resend';
 import { NewTicketEmail } from '@/emails/new-ticket-email';
-import { addBusinessDays } from 'date-fns'; // <-- IMPORTAÇÃO DA DATE-FNS
+import { generateTicketIdV2 } from '@/app/_lib/generate-ticket-id';
 
-// --- Schemas (sem alteração) ---
+/* eslint-disable */
+
+// Schema de anexo
 const attachmentSchema = z.object({
   url: z.string().url('URL do anexo inválida'),
   filename: z.string().min(1, 'Nome do arquivo do anexo inválido'),
@@ -19,6 +21,7 @@ const attachmentSchema = z.object({
   size: z.number().int().positive().optional(),
 });
 
+// Schema de criação de ticket
 const ticketCreateSchema = z.object({
   title: z.string().min(5, 'Título deve ter pelo menos 5 caracteres'),
   description: z
@@ -33,20 +36,39 @@ const ticketCreateSchema = z.object({
   attachments: z.array(attachmentSchema).optional(),
 });
 
-// 3. Handler POST (Modificado)
+// Configuração de SLA por prioridade (em dias úteis)
+const SLA_DAYS: Record<Priority, number> = {
+  [Priority.URGENT]: 1,
+  [Priority.HIGH]: 3,
+  [Priority.MEDIUM]: 5,
+  [Priority.LOW]: 10,
+};
+
+/**
+ * Calcula o prazo de SLA com base na prioridade
+ */
+function calculateSlaDeadline(priority: Priority): Date {
+  const now = new Date();
+  const days = SLA_DAYS[priority];
+  return addBusinessDays(now, days);
+}
+
+// Handler POST
 export async function POST(req: Request) {
-  // 3.1. Segurança: Obter a sessão
-  const session = await getServerSession(authOptions);
-  if (!session || !session.user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
-  }
-  const userId = session.user.id;
-
   try {
-    const body = await req.json();
+    // 1. Autenticação - Verificar sessão
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
 
-    // 3.2. Validação
+    const userId = session.user.id;
+    const userName = session.user.name || 'Usuário';
+
+    // 2. Validar corpo da requisição
+    const body = await req.json();
     const validation = ticketCreateSchema.safeParse(body);
+
     if (!validation.success) {
       return NextResponse.json(
         { error: 'Dados inválidos', details: validation.error.format() },
@@ -54,34 +76,34 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3.3. Separar os dados
-    const { areaId, attachments, ...ticketData } = validation.data;
+    const { areaId, attachments, priority, ...ticketData } = validation.data;
 
-    // --- 4. NOVO: Lógica de Cálculo do SLA ---
-    const now = new Date();
-    let slaDeadline: Date | null = null;
+    // 3. Verificar se a área existe
+    const area = await db.area.findUnique({
+      where: { id: areaId },
+      select: { id: true, name: true, code: true },
+    });
 
-    switch (ticketData.priority) {
-      case Priority.URGENT:
-        slaDeadline = addBusinessDays(now, 1);
-        break;
-      case Priority.HIGH:
-        slaDeadline = addBusinessDays(now, 3);
-        break;
-      case Priority.MEDIUM:
-        slaDeadline = addBusinessDays(now, 5);
-        break;
-      case Priority.LOW:
-        slaDeadline = addBusinessDays(now, 10);
-        break;
+    if (!area) {
+      return NextResponse.json(
+        { error: 'Área não encontrada' },
+        { status: 404 },
+      );
     }
-    // --- FIM DA LÓGICA DE SLA ---
 
-    // 3.4. Criar o chamado e os anexos (Transacional)
+    // 4. Calcular prazo de SLA
+    const slaDeadline = calculateSlaDeadline(priority);
+
+    // 5. Gerar ID personalizado do ticket
+    const ticketId = await generateTicketIdV2(areaId);
+
+    // 6. Criar ticket e anexos (transacional)
     const newTicket = await db.ticket.create({
       data: {
         ...ticketData,
-        slaDeadline: slaDeadline, // <-- 5. SALVA O PRAZO NO BANCO
+        ticketId,
+        priority,
+        slaDeadline,
         requester: {
           connect: { id: userId },
         },
@@ -101,84 +123,146 @@ export async function POST(req: Request) {
           }),
       },
       include: {
-        requester: { select: { name: true } },
-        area: { select: { name: true } },
+        requester: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        area: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         attachments: true,
       },
     });
-    // --- 4. NOVO: Lógica de Envio de Email (Fire-and-Forget) ---
-    try {
-      // 4.1. Encontrar o(s) gestor(es) da área
-      const managers = await db.user.findMany({
-        where: {
-          role: Role.MANAGER,
-          areaId: newTicket.areaId, // A área do ticket recém-criado
-        },
-        select: {
-          email: true,
-          name: true,
-        },
+
+    // 7. Enviar email para gestores (fire-and-forget)
+    const canSendEmail = fromEmail && process.env.NEXT_PUBLIC_BASE_URL;
+
+    if (canSendEmail) {
+      // Não aguardar o envio de email para não bloquear a resposta
+      sendNotificationToManagers(newTicket).catch((error) => {
+        console.error('[EMAIL_ERROR] Erro ao enviar notificação:', error);
       });
-
-      if (
-        managers.length > 0 &&
-        fromEmail &&
-        process.env.NEXT_PUBLIC_BASE_URL
-      ) {
-        // 4.2. Preparar os dados do email
-        const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/${newTicket.id}`;
-
-        // Envia para cada gestor
-        for (const manager of managers) {
-          if (!manager.email || !manager.name) continue;
-
-          await resend.emails.send({
-            from: fromEmail,
-            to: manager.email,
-            subject: `Novo Chamado #${newTicket.id}: ${newTicket.title}`,
-
-            // Renderiza o componente React como o corpo do email
-            react: React.createElement(NewTicketEmail, {
-              managerName: manager.name,
-              requesterName: newTicket.requester.name,
-              ticketTitle: newTicket.title,
-              ticketPriority: newTicket.priority,
-              ticketUrl: ticketUrl,
-            }),
-          });
-        }
-      } else {
-        if (!fromEmail || !process.env.NEXT_PUBLIC_BASE_URL) {
-          console.warn(
-            'AVISO: EMAIL_FROM ou NEXT_PUBLIC_BASE_URL não definidos. Email não enviado.',
-          );
-        }
-        if (managers.length === 0) {
-          console.warn(
-            `Nenhum gestor encontrado para a área ${newTicket.area.name}. Email não enviado.`,
-          );
-        }
-      }
-    } catch (emailError) {
-      // Se o email falhar, o chamado já foi criado.
-      // Apenas logamos o erro, mas não falhamos a requisição.
-      console.error('[API_TICKETS_POST_EMAIL_ERROR]', emailError);
+    } else {
+      console.warn(
+        '[EMAIL_WARNING] EMAIL_FROM ou NEXT_PUBLIC_BASE_URL não definidos',
+      );
     }
 
-    // 5. Retorna o sucesso
-    return NextResponse.json(newTicket, { status: 201 });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // 8. Retornar sucesso
+    return NextResponse.json(
+      {
+        success: true,
+        ticket: newTicket,
+        message: 'Chamado criado com sucesso',
+      },
+      { status: 201 },
+    );
   } catch (error: any) {
     console.error('[API_TICKETS_POST_ERROR]', error);
+
+    // Tratamento de erros específicos do Prisma
     if (error.code === 'P2025') {
       return NextResponse.json(
-        { error: 'A Área selecionada ou o Usuário não existe' },
+        { error: 'Área ou usuário não encontrado' },
         { status: 404 },
       );
     }
+
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Conflito de dados únicos (ticketId duplicado)' },
+        { status: 409 },
+      );
+    }
+
+    if (error.code === 'P2003') {
+      return NextResponse.json(
+        { error: 'Referência inválida (areaId ou userId)' },
+        { status: 400 },
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error.message },
       { status: 500 },
     );
+  }
+}
+
+/**
+ * Envia notificação por email para os gestores da área
+ */
+async function sendNotificationToManagers(ticket: any): Promise<void> {
+  try {
+    // Buscar gestores da área
+    const managers = await db.user.findMany({
+      where: {
+        role: Role.MANAGER,
+        areaId: ticket.areaId,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+
+    if (managers.length === 0) {
+      console.warn(
+        `[EMAIL_WARNING] Nenhum gestor encontrado para área: ${ticket.area.name}`,
+      );
+      return;
+    }
+
+    const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/${ticket.id}`;
+
+    // Enviar email para cada gestor
+    const emailPromises = managers
+      .filter((manager) => manager.email && manager.name)
+      .map(async (manager) => {
+        try {
+          await resend.emails.send({
+            from: fromEmail!,
+            to: manager.email!,
+            subject: `Novo Chamado ${ticket.ticketId}: ${ticket.title}`,
+            react: React.createElement(NewTicketEmail, {
+              managerName: manager.name!,
+              requesterName: ticket.requester.name || 'Solicitante',
+              ticketTitle: ticket.title,
+              ticketPriority: ticket.priority,
+              ticketUrl,
+            }),
+          });
+
+          console.log(
+            `[EMAIL_SUCCESS] Email enviado para gestor: ${manager.email}`,
+          );
+        } catch (error) {
+          console.error(
+            `[EMAIL_ERROR] Erro ao enviar para ${manager.email}:`,
+            error,
+          );
+          throw error; // Re-throw para ser capturado no Promise.allSettled
+        }
+      });
+
+    // Aguardar todos os emails (mesmo se alguns falharem)
+    const results = await Promise.allSettled(emailPromises);
+
+    const successCount = results.filter((r) => r.status === 'fulfilled').length;
+    const failureCount = results.filter((r) => r.status === 'rejected').length;
+
+    console.log(
+      `[EMAIL_SUMMARY] Enviados: ${successCount}, Falhas: ${failureCount}`,
+    );
+  } catch (error) {
+    console.error('[EMAIL_ERROR] Erro geral ao enviar notificações:', error);
+    throw error;
   }
 }

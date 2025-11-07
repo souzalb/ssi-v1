@@ -23,6 +23,7 @@ import { Button } from '@/app/_components/ui/button';
 // Tipos para os tickets
 interface Ticket {
   id: string;
+  ticketId: string;
   title: string;
   status: string;
   priority?: string;
@@ -121,7 +122,7 @@ const TicketItem = ({ ticket }: { ticket: Ticket; index: number }) => {
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="font-mono text-sm font-semibold text-blue-600 dark:text-blue-400">
-              {ticket.id}
+              {ticket.ticketId}
             </span>
             {priorityConfig && (
               <Badge

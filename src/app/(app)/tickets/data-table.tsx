@@ -14,13 +14,13 @@ import {
 } from '@tanstack/react-table';
 import { User } from '@prisma/client';
 
-// --- Importações para Exportação (Segura) ---
+// Importações para Exportação
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable, { type UserOptions } from 'jspdf-autotable';
 
-// --- Componentes ---
+// Componentes
 import {
   Table,
   TableBody,
@@ -60,19 +60,20 @@ import { Trash, Download, Loader2, FileSpreadsheet } from 'lucide-react';
 import { TicketComRelacoes } from './columns';
 import { cn } from '@/app/_lib/utils';
 
-// Adiciona a interface para o 'didDrawPage' (necessário para o autotable)
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Interface para o hook do autotable
 interface AutoTableHookData {
   pageNumber: number;
-  // ... (outros campos que não vamos usar)
 }
 
-// Tipo para os técnicos que vamos buscar
+// Tipo para os técnicos
 type Technician = Pick<User, 'id' | 'name'>;
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  statuses: string[]; // Recebe os status do Server Component
+  statuses: string[];
 }
 
 export function DataTable<TData, TValue>({
@@ -84,7 +85,7 @@ export function DataTable<TData, TValue>({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Estados da Tabela (Ordenação lida da URL)
+  // Estados da Tabela
   const sort = searchParams.get('sort') || 'createdAt';
   const order = searchParams.get('order') || 'desc';
   const [sorting, setSorting] = useState<SortingState>([
@@ -105,8 +106,6 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-
-    // Configuração da Ordenação (Server-side)
     manualSorting: true,
     onSortingChange: (updater) => {
       const newSorting =
@@ -114,7 +113,6 @@ export function DataTable<TData, TValue>({
 
       setSorting(newSorting);
 
-      // Atualiza a URL
       const params = new URLSearchParams(searchParams.toString());
       if (newSorting.length > 0) {
         params.set('sort', newSorting[0].id);
@@ -126,8 +124,6 @@ export function DataTable<TData, TValue>({
       router.push(pathname + '?' + params.toString());
     },
     getSortedRowModel: getSortedRowModel(),
-
-    // Configuração da Seleção
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
@@ -136,7 +132,7 @@ export function DataTable<TData, TValue>({
     getRowId: (row) => (row as TicketComRelacoes).id,
   });
 
-  // Buscar Técnicos (para o dropdown)
+  // Buscar Técnicos
   useEffect(() => {
     const fetchTechnicians = async () => {
       try {
@@ -150,16 +146,16 @@ export function DataTable<TData, TValue>({
       }
     };
     fetchTechnicians();
-  }, []); // O array vazio garante que rode apenas uma vez
+  }, []);
 
-  // Variáveis derivadas do estado da tabela
+  // Variáveis derivadas
   const numSelected = table.getSelectedRowModel().rows.length;
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map(
     (row) => (row.original as TicketComRelacoes).id,
   );
 
-  // Função: Handle Bulk Update (Status ou Técnico)
+  // Handle Bulk Update
   const handleBulkUpdate = async (action: 'status' | 'technician') => {
     setIsLoading(true);
     let body = {};
@@ -199,7 +195,6 @@ export function DataTable<TData, TValue>({
       toast.success(result.message);
       router.refresh();
       table.resetRowSelection();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error('Erro', { description: error.message });
     } finally {
@@ -209,7 +204,7 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  // Função: Handle Delete (Exclusão em Lote)
+  // Handle Delete
   const handleDeleteSelected = async () => {
     setIsLoading(true);
 
@@ -228,7 +223,6 @@ export function DataTable<TData, TValue>({
       toast.success(result.message);
       router.refresh();
       table.resetRowSelection();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error('Erro', { description: error.message });
     } finally {
@@ -237,7 +231,7 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  // Função: Handle Export (Excel ou CSV)
+  // Handle Export Excel/CSV - ADAPTADO PARA ticketId
   const handleExportExcelCsv = async (format: 'xlsx' | 'csv') => {
     if (numSelected === 0) {
       toast.error('Nenhum ticket selecionado para exportar.');
@@ -252,7 +246,8 @@ export function DataTable<TData, TValue>({
     const dataToExport = selectedRows.map((row) => {
       const ticket = row.original as TicketComRelacoes;
       return {
-        'ID do Ticket': `#${ticket.id.substring(ticket.id.length - 6)}`,
+        'ID do Ticket':
+          ticket.ticketId || `#${ticket.id.substring(ticket.id.length - 6)}`, // USA ticketId
         Título: ticket.title,
         Departamento: ticket.area.name,
         Prioridade: ticket.priority,
@@ -306,7 +301,7 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  // Função: Handle Export PDF
+  // Handle Export PDF - ADAPTADO PARA ticketId
   const handleExportPdf = () => {
     if (numSelected === 0) {
       toast.error('Nenhum ticket selecionado para exportar.');
@@ -331,7 +326,7 @@ export function DataTable<TData, TValue>({
       const body = selectedRows.map((row) => {
         const ticket = row.original as TicketComRelacoes;
         return [
-          `#${ticket.id.substring(ticket.id.length - 6)}`,
+          ticket.ticketId || `#${ticket.id.substring(ticket.id.length - 6)}`, // USA ticketId
           ticket.title,
           ticket.status,
           ticket.priority,
@@ -345,10 +340,9 @@ export function DataTable<TData, TValue>({
 
       const doc = new jsPDF();
 
-      // --- Cabeçalho do PDF ---
-      // (Substitua a string 'logoBase64' pela sua)
+      // Cabeçalho do PDF
       const logoBase64 =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABCSURBVFhH7c4xEQAgDMCw/HN8G7aBIAiCERBERAgiIAhBRISIIARBRISIIARBRISIIARBRISIIARBRIRIJPkH6eYADi6r/wAAAABJRU5ErkJggg==';
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABCSURBVFhH7c4xEQAgDMCw/HN8G7aBIAiCERBERAgiIAhBRISIIARBRISIIARBRISIIARBRIRIJPkH6eYADi6r/wAAAABJRU5ErkJggg==';
       doc.addImage(logoBase64, 'PNG', 14, 10, 20, 20);
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
@@ -364,7 +358,7 @@ export function DataTable<TData, TValue>({
         { align: 'right' },
       );
 
-      // --- Tabela do PDF ---
+      // Tabela do PDF
       autoTable(doc, {
         startY: 35,
         head: head,
@@ -374,10 +368,8 @@ export function DataTable<TData, TValue>({
           fillColor: [30, 30, 30],
           textColor: [255, 255, 255],
         },
-        // --- Rodapé do PDF ---
         didDrawPage: (data: UserOptions | AutoTableHookData) => {
           const hookData = data as AutoTableHookData;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const pageCount = (doc.internal as any).getNumberOfPages();
           doc.setFontSize(10);
           doc.setTextColor(100);
@@ -405,18 +397,17 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  // --- O JSX ---
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        {/* --- TOOLBAR DE AÇÕES EM LOTE --- */}
+        {/* TOOLBAR DE AÇÕES EM LOTE */}
         <div
           className={cn(
             'space-y-4 rounded-lg border p-4',
             numSelected > 0 ? 'bg-muted/50' : 'hidden',
           )}
         >
-          {/* Linha 1: Contagem e Ações Finais (Exportar, Excluir) */}
+          {/* Linha 1: Contagem e Ações Finais */}
           <div className="flex items-center justify-between gap-4">
             <div className="text-muted-foreground flex-1 text-sm font-medium">
               {numSelected} ticket(s) selecionado(s)
@@ -449,7 +440,7 @@ export function DataTable<TData, TValue>({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Botão de Excluir (com AlertDialog) */}
+              {/* Botão de Excluir */}
               <AlertDialog
                 open={isDeleteAlertOpen}
                 onOpenChange={setIsDeleteAlertOpen}
@@ -487,9 +478,9 @@ export function DataTable<TData, TValue>({
             </div>
           </div>
 
-          {/* Linha 2: Ações de Atualização (Status e Atribuição) */}
+          {/* Linha 2: Ações de Atualização */}
           <div className="flex flex-col gap-4 md:flex-row md:items-end">
-            {/* Bloco Atualizar Status */}
+            {/* Atualizar Status */}
             <div className="flex-1 space-y-2">
               <Label>Atualizar Status</Label>
               <div className="flex gap-2">
@@ -519,7 +510,7 @@ export function DataTable<TData, TValue>({
               </div>
             </div>
 
-            {/* Bloco Atribuir Usuário */}
+            {/* Atribuir Usuário */}
             <div className="flex-1 space-y-2">
               <Label>Atribuir Usuário</Label>
               <div className="flex gap-2">
@@ -552,7 +543,7 @@ export function DataTable<TData, TValue>({
           </div>
         </div>
 
-        {/* --- Tabela --- */}
+        {/* Tabela */}
         <div className="rounded-md border">
           <Table>
             <TableHeader>
