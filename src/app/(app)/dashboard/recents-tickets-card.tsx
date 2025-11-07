@@ -163,7 +163,7 @@ const TicketItem = ({ ticket }: { ticket: Ticket; index: number }) => {
                   ? 'TI'
                   : ticket.department == 'BUILDING'
                     ? 'Predial'
-                    : ticket.department == 'ELETRICAL'
+                    : ticket.department == 'ELECTRICAL'
                       ? 'Elétrica'
                       : 'OUTRO'}
               </span>
