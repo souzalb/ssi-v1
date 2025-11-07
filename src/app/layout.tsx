@@ -6,7 +6,6 @@ import { authOptions } from './api/auth/[...nextauth]/route';
 import { cn } from './_lib/utils';
 import { AuthProvider } from './(app)/auth-provider';
 import { ThemeProvider } from './_components/theme-provider';
-import { Header } from './_components/header';
 import { MobileBottomNav } from './_components/mobile-bottom-nav';
 import { Toaster } from 'sonner';
 
@@ -22,9 +21,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // O layout precisa de buscar a sessão para passar a role para o MobileBottomNav
-  const session = await getServerSession(authOptions); // Certifique-se de importar authOptions
-
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
@@ -44,10 +40,7 @@ export default async function RootLayout({
             {/* O Conteúdo da Página */}
             <main>{children}</main>
 
-            {/* O Menu Inferior (visível apenas em mobile) */}
-            {session?.user && ( // Só renderiza se houver utilizador logado
-              <MobileBottomNav userRole={session.user.role} />
-            )}
+            <MobileBottomNav />
 
             <Toaster richColors />
           </ThemeProvider>
