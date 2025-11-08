@@ -81,9 +81,9 @@ const MetricCard = ({
         <div className="flex items-start justify-between">
           {/* Ícone */}
           <div
-            className={`rounded-xl ${iconBg} p-3 shadow-lg transition-transform group-hover:scale-110`}
+            className={`rounded-xl ${iconBg} p-2 shadow-lg transition-transform group-hover:scale-110 md:p-3`}
           >
-            <Icon className="h-5 w-5 text-white" />
+            <Icon className="h-3 w-3 text-white md:h-5 md:w-5" />
           </div>
 
           {/* Trend badge */}
@@ -101,7 +101,7 @@ const MetricCard = ({
         <div className="mt-4">
           <div className="flex items-baseline gap-1">
             <span
-              className={`bg-linear-to-br ${gradient} bg-clip-text text-3xl font-bold text-transparent`}
+              className={`bg-linear-to-br ${gradient} bg-clip-text text-xl font-bold text-transparent md:text-3xl`}
             >
               {value}
             </span>
@@ -113,7 +113,7 @@ const MetricCard = ({
           </div>
 
           {/* Título */}
-          <p className="mt-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+          <p className="mt-2 text-xs font-medium text-slate-600 md:text-sm dark:text-slate-400">
             {title}
           </p>
         </div>
@@ -170,11 +170,11 @@ export function PerformanceMetrics({
         <CardHeader className="flex items-center justify-between">
           <div>
             <CardTitle>
-              <h2 className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+              <h2 className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-lg font-bold text-transparent md:text-2xl dark:from-white dark:to-slate-300">
                 Métricas de Performance
               </h2>
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-sm md:text-sm">
               Acompanhe os principais indicadores do seu time
             </CardDescription>
           </div>

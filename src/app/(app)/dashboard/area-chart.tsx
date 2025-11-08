@@ -152,12 +152,12 @@ export function AreaChart({ data }: AreaChartProps) {
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-emerald-500" />
 
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-lg font-bold text-transparent md:text-2xl dark:from-white dark:to-slate-300">
               Chamados por Área
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-xs md:text-sm">
               Distribuição dos chamados por departamento
             </CardDescription>
           </div>
@@ -280,11 +280,11 @@ export function AreaChart({ data }: AreaChartProps) {
           <div className="rounded-xl border border-indigo-200 bg-linear-to-br from-indigo-50 to-purple-50 p-4 dark:border-indigo-800 dark:from-indigo-950 dark:to-purple-950">
             <div className="mb-1 flex items-center gap-2">
               <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-xs font-semibold tracking-wider text-indigo-700 uppercase dark:text-indigo-300">
+              <span className="text-xs font-semibold tracking-wider text-indigo-700 md:uppercase dark:text-indigo-300">
                 Total Geral
               </span>
             </div>
-            <div className="bg-linear-to-br from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent">
+            <div className="bg-linear-to-br from-indigo-600 to-purple-600 bg-clip-text text-xl font-bold text-transparent md:text-2xl">
               {totalChamados}
             </div>
           </div>
@@ -292,11 +292,11 @@ export function AreaChart({ data }: AreaChartProps) {
           <div className="rounded-xl border border-purple-200 bg-linear-to-br from-purple-50 to-indigo-50 p-4 dark:border-purple-800 dark:from-purple-950 dark:to-indigo-950">
             <div className="mb-1 flex items-center gap-2">
               <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs font-semibold tracking-wider text-purple-700 uppercase dark:text-purple-300">
+              <span className="text-xs font-semibold tracking-wider text-purple-700 md:uppercase dark:text-purple-300">
                 Departamentos
               </span>
             </div>
-            <div className="bg-linear-to-br from-purple-600 to-indigo-600 bg-clip-text text-2xl font-bold text-transparent">
+            <div className="bg-linear-to-br from-purple-600 to-indigo-600 bg-clip-text text-xl font-bold text-transparent md:text-2xl">
               {totalAreas}
             </div>
           </div>

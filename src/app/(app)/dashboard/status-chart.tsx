@@ -152,12 +152,12 @@ export function StatusChart({ data }: StatusChartProps) {
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-emerald-500" />
 
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
           <div className="space-y-1">
-            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-lg font-bold text-transparent md:text-2xl dark:from-white dark:to-slate-300">
               Chamados por Status
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-xs md:text-sm">
               Análise da distribuição de todos os chamados na sua fila
             </CardDescription>
           </div>
@@ -253,26 +253,26 @@ export function StatusChart({ data }: StatusChartProps) {
 
         {/* Cards de métricas */}
         <div className="mt-6 grid grid-cols-2 gap-4">
-          <div className="rounded-xl border border-purple-200 bg-linear-to-br from-purple-50 to-indigo-50 p-4 dark:border-purple-800 dark:from-purple-950 dark:to-indigo-950">
+          <div className="flex flex-col justify-between rounded-xl border border-purple-200 bg-linear-to-br from-purple-50 to-indigo-50 p-4 dark:border-purple-800 dark:from-purple-950 dark:to-indigo-950">
             <div className="mb-1 flex items-center gap-2">
               <Activity className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs font-semibold tracking-wider text-purple-700 uppercase dark:text-purple-300">
+              <span className="text-xs font-semibold tracking-wider text-purple-700 md:uppercase dark:text-purple-300">
                 Total de Chamados
               </span>
             </div>
-            <div className="bg-linear-to-br from-purple-600 to-indigo-600 bg-clip-text text-2xl font-bold text-transparent">
+            <div className="bg-linear-to-br from-purple-600 to-indigo-600 bg-clip-text text-xl font-bold text-transparent md:text-2xl">
               {totalChamados}
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-gray-50 p-4 dark:border-slate-700 dark:from-slate-900 dark:to-gray-900">
+          <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-gray-50 p-4 dark:border-slate-700 dark:from-slate-900 dark:to-gray-900">
             <div className="mb-1 flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-slate-500" />
-              <span className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+              <span className="text-xs font-semibold tracking-wider text-slate-700 md:uppercase dark:text-slate-300">
                 Média por Status
               </span>
             </div>
-            <div className="bg-linear-to-br from-slate-600 to-gray-600 bg-clip-text text-2xl font-bold text-transparent">
+            <div className="bg-linear-to-br from-slate-600 to-gray-600 bg-clip-text text-xl font-bold text-transparent md:text-2xl">
               {(totalChamados / statusAtivos).toFixed(1)}
             </div>
           </div>

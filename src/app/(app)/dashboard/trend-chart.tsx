@@ -145,10 +145,10 @@ export function TrendChart({ data }: TrendChartProps) {
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-lg font-bold text-transparent md:text-2xl dark:from-white dark:to-slate-300">
               Tendência de Chamados
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-xs md:text-sm">
               Volume de chamados abertos vs. resolvidos nos últimos 12 meses
             </CardDescription>
           </div>
@@ -274,26 +274,26 @@ export function TrendChart({ data }: TrendChartProps) {
 
         {/* Insights visuais */}
         <div className="mt-6 grid grid-cols-2 gap-4">
-          <div className="rounded-xl border border-blue-200 bg-linear-to-br from-blue-50 to-indigo-50 p-4 dark:border-blue-800 dark:from-blue-950 dark:to-indigo-950">
+          <div className="flex flex-col justify-between rounded-xl border border-blue-200 bg-linear-to-br from-blue-50 to-indigo-50 p-4 dark:border-blue-800 dark:from-blue-950 dark:to-indigo-950">
             <div className="mb-1 flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-blue-500" />
-              <span className="text-xs font-semibold tracking-wider text-blue-700 uppercase dark:text-blue-300">
+              <span className="text-xs font-semibold tracking-wider text-blue-700 md:uppercase dark:text-blue-300">
                 Total Abertos
               </span>
             </div>
-            <div className="bg-linear-to-br from-blue-600 to-indigo-600 bg-clip-text text-2xl font-bold text-transparent">
+            <div className="bg-linear-to-br from-blue-600 to-indigo-600 bg-clip-text text-xl font-bold text-transparent md:text-2xl">
               {totalNovos}
             </div>
           </div>
 
-          <div className="rounded-xl border border-emerald-200 bg-linear-to-br from-emerald-50 to-teal-50 p-4 dark:border-emerald-800 dark:from-emerald-950 dark:to-teal-950">
+          <div className="flex flex-col justify-between rounded-xl border border-emerald-200 bg-linear-to-br from-emerald-50 to-teal-50 p-4 dark:border-emerald-800 dark:from-emerald-950 dark:to-teal-950">
             <div className="mb-1 flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-xs font-semibold tracking-wider text-emerald-700 uppercase dark:text-emerald-300">
+              <span className="text-xs font-semibold tracking-wider text-emerald-700 md:uppercase dark:text-emerald-300">
                 Total Resolvidos
               </span>
             </div>
-            <div className="bg-linear-to-br from-emerald-600 to-teal-600 bg-clip-text text-2xl font-bold text-transparent">
+            <div className="bg-linear-to-br from-emerald-600 to-teal-600 bg-clip-text text-xl font-bold text-transparent md:text-2xl">
               {totalResolvidos}
             </div>
           </div>

@@ -198,12 +198,12 @@ export function RecentTicketsCard({ tickets }: RecentTicketsCardProps) {
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-emerald-500" />
 
       <CardHeader>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-lg font-bold text-transparent md:text-2xl dark:from-white dark:to-slate-300">
               Chamados Recentes
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-xs md:text-sm">
               Os 4 chamados mais recentes na sua fila
             </CardDescription>
           </div>

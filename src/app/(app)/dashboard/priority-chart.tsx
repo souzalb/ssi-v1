@@ -172,12 +172,12 @@ export function PriorityChart({ data }: PriorityChartProps) {
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-orange-500 to-red-500" />
 
       <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+            <CardTitle className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-lg font-bold text-transparent md:text-2xl dark:from-white dark:to-slate-300">
               Chamados por Prioridade
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-xs md:text-sm">
               Distribuição dos chamados pelo nível de prioridade
             </CardDescription>
           </div>
@@ -295,26 +295,26 @@ export function PriorityChart({ data }: PriorityChartProps) {
 
         {/* Cards de métricas */}
         <div className="mt-8 grid grid-cols-2 gap-4">
-          <div className="rounded-xl border border-indigo-200 bg-linear-to-br from-indigo-50 to-purple-50 p-4 dark:border-indigo-800 dark:from-indigo-950 dark:to-purple-950">
+          <div className="flex flex-col justify-between rounded-xl border border-indigo-200 bg-linear-to-br from-indigo-50 to-purple-50 p-4 dark:border-indigo-800 dark:from-indigo-950 dark:to-purple-950">
             <div className="mb-1 flex items-center gap-2">
               <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-xs font-semibold tracking-wider text-indigo-700 uppercase dark:text-indigo-300">
+              <span className="text-xs font-semibold tracking-wider text-indigo-700 md:uppercase dark:text-indigo-300">
                 Total Geral
               </span>
             </div>
-            <div className="bg-linear-to-br from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent">
+            <div className="bg-linear-to-br from-indigo-600 to-purple-600 bg-clip-text text-xl font-bold text-transparent md:text-2xl">
               {totalChamados}
             </div>
           </div>
 
-          <div className="rounded-xl border border-red-200 bg-linear-to-br from-red-50 to-orange-50 p-4 dark:border-red-800 dark:from-red-950 dark:to-orange-950">
+          <div className="flex flex-col justify-between rounded-xl border border-red-200 bg-linear-to-br from-red-50 to-orange-50 p-4 dark:border-red-800 dark:from-red-950 dark:to-orange-950">
             <div className="mb-1 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-              <span className="text-xs font-semibold tracking-wider text-red-700 uppercase dark:text-red-300">
+              <span className="text-xs font-semibold tracking-wider text-red-700 md:uppercase dark:text-red-300">
                 Alta Prioridade
               </span>
             </div>
-            <div className="bg-linear-to-br from-red-600 to-orange-600 bg-clip-text text-2xl font-bold text-transparent">
+            <div className="bg-linear-to-br from-red-600 to-orange-600 bg-clip-text text-xl font-bold text-transparent md:text-2xl">
               {prioridadesCriticas}
             </div>
           </div>

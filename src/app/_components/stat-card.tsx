@@ -112,7 +112,7 @@ export function StatCard({ title, value, icon, trend }: StatCardProps) {
       />
 
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pt-6">
-        <CardTitle className="text-sm font-semibold tracking-wide text-slate-600 uppercase dark:text-slate-300">
+        <CardTitle className="text-xs font-semibold tracking-wide text-slate-600 uppercase md:text-sm dark:text-slate-300">
           {title}
         </CardTitle>
         <div
@@ -126,13 +126,13 @@ export function StatCard({ title, value, icon, trend }: StatCardProps) {
         <div className="flex items-end justify-between">
           <div className="space-y-1">
             <div
-              className={`bg-linear-to-br text-5xl font-bold ${theme.gradient} bg-clip-text text-transparent`}
+              className={`bg-linear-to-br text-4xl font-bold md:text-5xl ${theme.gradient} bg-clip-text text-transparent`}
             >
               {value}
             </div>
 
             {trend && (
-              <div className="flex items-center gap-1 text-xs">
+              <div className="hidden items-center gap-1 text-xs md:flex">
                 <span
                   className={
                     trend.isPositive ? 'text-emerald-600' : 'text-red-600'
@@ -149,7 +149,7 @@ export function StatCard({ title, value, icon, trend }: StatCardProps) {
 
           {/* Indicador visual decorativo */}
           <div className="flex flex-col gap-1 opacity-20">
-            <div className={`h-8 w-1 ${theme.accentColor} rounded-full`} />
+            <div className={`w-1 md:h-8 ${theme.accentColor} rounded-full`} />
             <div className={`h-5 w-1 ${theme.accentColor} rounded-full`} />
             <div className={`h-3 w-1 ${theme.accentColor} rounded-full`} />
           </div>

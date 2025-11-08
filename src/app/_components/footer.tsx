@@ -5,12 +5,12 @@ import {
   Github,
   Linkedin,
   Mail,
-  Heart,
   ExternalLink,
   Shield,
   FileText,
   HelpCircle,
   Zap,
+  Cog,
 } from 'lucide-react';
 
 interface FooterProps {
@@ -86,14 +86,14 @@ export function Footer({
           <div className="lg:col-span-2">
             <Link href="/" className="group inline-flex items-center gap-2">
               <div className="rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 p-2 shadow-lg transition-transform group-hover:scale-105">
-                <Shield className="h-6 w-6 text-white" />
+                <Cog className="h-6 w-6 text-white" />
               </div>
-              <span className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent dark:from-white dark:to-slate-300">
+              <span className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-xl font-bold text-transparent md:text-2xl dark:from-white dark:to-slate-300">
                 {companyName}
               </span>
             </Link>
 
-            <p className="mt-4 max-w-md text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-4 max-w-md text-xs text-slate-600 md:text-sm dark:text-slate-400">
               Sistema inteligente de gerenciamento de chamados. Simplifique seu
               suporte, aumente a produtividade e ofereça uma experiência
               excepcional aos seus clientes.
@@ -200,7 +200,7 @@ export function Footer({
                 Receba atualizações e dicas sobre gestão de suporte
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 md:flex-row">
               <input
                 type="email"
                 placeholder="seu@email.com"
@@ -217,7 +217,7 @@ export function Footer({
         <div className="mt-12 border-t border-slate-200 pt-8 dark:border-slate-800">
           <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
             {/* Copyright */}
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            <div className="flex flex-col items-center gap-2 text-sm text-slate-600 md:flex-row dark:text-slate-400">
               <span>
                 © {currentYear} {companyName}.
               </span>

@@ -31,10 +31,6 @@ import { AreaChart } from './area-chart';
 import { RecentTicketsCard } from './recents-tickets-card';
 import { PerformanceMetrics } from './performance-metrics';
 
-type TicketWithRequester = Prisma.TicketGetPayload<{
-  include: { requester: { select: { name: true } } };
-}>;
-
 // --- Função Auxiliar 1 (calcula Tempo Médio E Taxa de SLA) ---
 function calculatePerformanceMetrics(
   tickets: {
@@ -294,8 +290,7 @@ export default async function DashboardPage() {
   }
 
   const resolvedTickets = performanceData.filter((t) => t.resolvedAt);
-  const { avgTime, slaRate, totalResolved } =
-    calculatePerformanceMetrics(resolvedTickets);
+  const { avgTime, slaRate } = calculatePerformanceMetrics(resolvedTickets);
 
   const averageSatisfaction =
     avgRatingResult._avg.satisfactionRating?.toFixed(1) || 'N/A';
@@ -369,29 +364,6 @@ export default async function DashboardPage() {
     return Math.round(percentChange);
   }
 
-  // --- Função Auxiliar 5 (calcula trend da satisfação) ---
-  function calculateSatisfactionTrend(
-    currentPeriodTickets: any[],
-    previousPeriodTickets: any[],
-  ): number | undefined {
-    const calculateAvgRating = async (ticketIds: string[]) => {
-      if (ticketIds.length === 0) return null;
-
-      const result = await db.ticket.aggregate({
-        _avg: { satisfactionRating: true },
-        where: {
-          id: { in: ticketIds },
-          satisfactionRating: { not: null },
-        },
-      });
-
-      return result._avg.satisfactionRating;
-    };
-
-    // Esta função precisa ser async, então vamos modificar a abordagem
-    return undefined; // Por enquanto retorna undefined
-  }
-
   // --- Função Auxiliar 6 (calcula trend da taxa SLA) ---
   function calculateSLATrend(
     currentPeriodData: any[],
@@ -420,24 +392,6 @@ export default async function DashboardPage() {
   }
 
   // --- Função Auxiliar 7 (calcula trend de avaliações) ---
-  function calculateRatingsTrend(
-    currentPeriodTickets: string[],
-    previousPeriodTickets: string[],
-  ): { value: number; isPositive: boolean } | undefined {
-    // Usar a mesma lógica de calculateTrend mas para contar avaliações
-    // Por simplicidade, vamos usar o número de tickets como proxy
-    if (previousPeriodTickets.length === 0) return undefined;
-
-    const percentChange =
-      ((currentPeriodTickets.length - previousPeriodTickets.length) /
-        previousPeriodTickets.length) *
-      100;
-
-    return {
-      value: Math.abs(Math.round(percentChange)),
-      isPositive: percentChange >= 0,
-    };
-  }
 
   // Adicione estas queries junto com as outras
   const currentPeriodPerformanceQuery = db.ticket.findMany({
@@ -531,102 +485,132 @@ export default async function DashboardPage() {
         )
       : undefined;
 
+  // Substitua o return do seu DashboardPage por este código otimizado para mobile:
+
   return (
-    <div className="p-8 pt-6">
-      {/* <AutoRefresher interval={300000} /> */}
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Olá, {name}! Bem-vindo(a) de volta.
-          </p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="p-4 pt-4 md:p-6 lg:p-8 lg:pt-6">
+        {/* HEADER RESPONSIVO */}
+        <header className="mb-4 flex flex-col justify-between space-y-4 md:flex-row">
+          {/* Título e Saudação */}
+
+          <div>
+            <h1 className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent md:text-3xl dark:from-white dark:to-slate-300">
+              Dashboard
+            </h1>
+            <p className="text-sm text-slate-600 md:text-base dark:text-slate-400">
+              Olá, <span className="font-semibold">{name}</span>! Bem-vindo(a)
+              de volta.
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-2 md:items-end">
+            <Button asChild size="default" className="w-full md:w-fit">
+              <Link href="/tickets/new">
+                <TicketPlusIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Abrir Novo Chamado</span>
+                <span className="sm:hidden">Novo Chamado</span>
+              </Link>
+            </Button>
+
+            <div className="flex items-center justify-center gap-2 text-xs text-slate-500 sm:justify-end sm:text-sm dark:text-slate-400">
+              <RefreshCcw className="h-3 w-3 animate-spin sm:h-4 sm:w-4" />
+              <span className="hidden md:inline">
+                Última atualização: {formattedDate}
+              </span>
+              <span className="md:hidden">
+                {format(new Date(), 'HH:mm', { locale: ptBR })}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* SEÇÃO 1: CARDS DE MÉTRICAS - Grid responsivo */}
+        <div className="mb-6 grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-5">
+          <StatCard
+            title="Total"
+            value={totalTickets}
+            icon={<Ticket className="h-4 w-4 md:h-5 md:w-5" />}
+            trend={totalTrend}
+          />
+          <StatCard
+            title="Novos"
+            value={formattedStats.OPEN}
+            icon={<FolderKanban className="h-4 w-4 md:h-5 md:w-5" />}
+            trend={newTicketsTrend}
+          />
+          <StatCard
+            title="Em Andamento"
+            value={formattedStats.IN_PROGRESS + formattedStats.ASSIGNED}
+            icon={<Clock className="h-4 w-4 md:h-5 md:w-5" />}
+            trend={inProgressTrend}
+          />
+          <StatCard
+            title="Em Espera"
+            value={formattedStats.ON_HOLD}
+            icon={<PauseIcon className="h-4 w-4 md:h-5 md:w-5" />}
+            trend={onHoldTrend}
+          />
+          <StatCard
+            title="Concluídos"
+            value={formattedStats.RESOLVED + formattedStats.CLOSED}
+            icon={<CheckCircle className="h-4 w-4 md:h-5 md:w-5" />}
+            trend={resolvedTrend}
+          />
         </div>
-        <div className="text-muted-foreground flex flex-col items-end space-y-2 text-sm">
-          <Button asChild>
-            <Link href="/tickets/new">
-              <TicketPlusIcon className="h-4 w-4" />
-              Abrir Novo Chamado
-            </Link>
-          </Button>
-          <div className="flex items-center">
-            <RefreshCcw className="animation-duration-[5s] mr-1.5 h-4 w-4 animate-spin" />
-            <span>Última atualização: {formattedDate}</span>
+
+        {/* SEÇÃO 2: GRÁFICOS - Stack no mobile, grid no desktop */}
+        <div className="space-y-6 lg:grid lg:grid-cols-5 lg:gap-6 lg:space-y-0">
+          {/* Coluna Principal - Gráficos grandes */}
+          <div className="space-y-6 lg:col-span-3">
+            {/* Gráfico de Tendência */}
+            <TrendChart data={trendData} />
+
+            {/* Gráfico de Status */}
+            <StatusChart data={formattedStats} />
+
+            {/* Métricas de Performance */}
+            <PerformanceMetrics
+              avgTime={avgTime}
+              averageSatisfaction={averageSatisfaction}
+              slaRate={slaRate}
+              totalRatings={totalRatings}
+              trends={{
+                avgTime: avgTimeTrend,
+                satisfaction: satisfactionTrend,
+                slaRate: slaTrend,
+                ratings: ratingsTrend,
+              }}
+            />
+          </div>
+
+          {/* Coluna Lateral - Cards secundários */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Chamados Recentes */}
+            <RecentTicketsCard
+              tickets={tickets.map((ticket) => ({
+                id: ticket.id,
+                ticketId: ticket.ticketId,
+                title: ticket.title,
+                status: ticket.status,
+                createdAt: ticket.createdAt,
+                priority: ticket.priority,
+                requesterName: ticket.requester.name,
+                department: ticket.area.name,
+              }))}
+            />
+
+            {/* Gráfico de Prioridade */}
+            <PriorityChart data={formattedPriorityStats} />
+
+            {/* Gráfico de Áreas (apenas SUPER_ADMIN) */}
+            {role === Role.SUPER_ADMIN && (
+              <AreaChart data={formattedAreaStats} />
+            )}
           </div>
         </div>
-      </header>
 
-      {/* --- SECÇÃO 1: MÉTRICAS OPERACIONAIS --- */}
-
-      <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <StatCard
-          title="Total de Chamados"
-          value={totalTickets}
-          icon={<Ticket className="h-5 w-5" />}
-          trend={totalTrend}
-        />
-        <StatCard
-          title="Novos Chamados"
-          value={formattedStats.OPEN}
-          icon={<FolderKanban className="h-5 w-5" />}
-          trend={newTicketsTrend}
-        />
-        <StatCard
-          title="Em Andamento"
-          value={formattedStats.IN_PROGRESS + formattedStats.ASSIGNED}
-          icon={<Clock className="h-5 w-5" />}
-          trend={inProgressTrend}
-        />
-        <StatCard
-          title="Em Espera"
-          value={formattedStats.ON_HOLD}
-          icon={<PauseIcon className="h-5 w-5" />}
-          trend={onHoldTrend}
-        />
-        <StatCard
-          title="Concluídos"
-          value={formattedStats.RESOLVED + formattedStats.CLOSED}
-          icon={<CheckCircle className="h-5 w-5" />}
-          trend={resolvedTrend}
-        />
-      </div>
-
-      {/* --- SECÇÃO 2: GRÁFICOS E CHAMADOS RECENTES --- */}
-      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="space-y-6 lg:col-span-3">
-          <TrendChart data={trendData} />
-          <StatusChart data={formattedStats} />
-
-          <PerformanceMetrics
-            avgTime={avgTime}
-            averageSatisfaction={averageSatisfaction}
-            slaRate={slaRate}
-            totalRatings={totalRatings}
-            trends={{
-              avgTime: avgTimeTrend,
-              satisfaction: satisfactionTrend,
-              slaRate: slaTrend,
-              ratings: ratingsTrend,
-            }}
-          />
-        </div>
-
-        <div className="space-y-6 lg:col-span-2">
-          <RecentTicketsCard
-            tickets={tickets.map((ticket) => ({
-              id: ticket.id,
-              ticketId: ticket.ticketId,
-              title: ticket.title,
-              status: ticket.status,
-              createdAt: ticket.createdAt,
-              priority: ticket.priority,
-              requesterName: ticket.requester.name,
-              department: ticket.area.name,
-            }))}
-          />
-
-          <PriorityChart data={formattedPriorityStats} />
-          {role === Role.SUPER_ADMIN && <AreaChart data={formattedAreaStats} />}
-        </div>
+        {/* Espaçamento extra no final para mobile */}
+        <div className="h-6 md:h-8" />
       </div>
     </div>
   );
