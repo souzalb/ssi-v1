@@ -39,13 +39,14 @@ export function DatePicker({ date, setDate, placeholder }: DatePickerProps) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent className="w-auto p-0 dark:bg-slate-900">
         <Calendar
           mode="single"
           selected={date}
           onSelect={setDate}
           initialFocus
           locale={ptBR} // Usa o calendário em Português
+          className="capitalize"
         />
       </PopoverContent>
     </Popover>

@@ -1,5 +1,5 @@
 'use client';
-
+/* eslint-disable */
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -11,16 +11,15 @@ import {
   getSortedRowModel,
   SortingState,
   RowSelectionState,
+  getPaginationRowModel,
 } from '@tanstack/react-table';
 import { User } from '@prisma/client';
 
-// Importações para Exportação
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable, { type UserOptions } from 'jspdf-autotable';
 
-// Componentes
 import {
   Table,
   TableBody,
@@ -55,19 +54,34 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/app/_components/ui/dropdown-menu';
-import { Trash, Download, Loader2, FileSpreadsheet } from 'lucide-react';
+import {
+  Trash,
+  Download,
+  Loader2,
+  FileSpreadsheet,
+  CheckSquare,
+  UserPlus,
+  RefreshCw,
+  FileText,
+  Sheet,
+  FileDown,
+  Sparkles,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from 'lucide-react';
 import { TicketComRelacoes } from './columns';
 import { cn } from '@/app/_lib/utils';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-// Interface para o hook do autotable
 interface AutoTableHookData {
   pageNumber: number;
 }
 
-// Tipo para os técnicos
 type Technician = Pick<User, 'id' | 'name'>;
 
 interface DataTableProps<TData, TValue> {
@@ -85,19 +99,20 @@ export function DataTable<TData, TValue>({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Estados da Tabela
   const sort = searchParams.get('sort') || 'createdAt';
   const order = searchParams.get('order') || 'desc';
   const [sorting, setSorting] = useState<SortingState>([
     { id: sort, desc: order === 'desc' },
   ]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
-  // Estados de UI
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
-  // Estados para Ações em Lote
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [statusToAction, setStatusToAction] = useState<string>('');
   const [technicianToAction, setTechnicianToAction] = useState<string>('');
@@ -106,6 +121,7 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     manualSorting: true,
     onSortingChange: (updater) => {
       const newSorting =
@@ -125,14 +141,15 @@ export function DataTable<TData, TValue>({
     },
     getSortedRowModel: getSortedRowModel(),
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
     state: {
       sorting,
       rowSelection,
+      pagination,
     },
     getRowId: (row) => (row as TicketComRelacoes).id,
   });
 
-  // Buscar Técnicos
   useEffect(() => {
     const fetchTechnicians = async () => {
       try {
@@ -148,14 +165,12 @@ export function DataTable<TData, TValue>({
     fetchTechnicians();
   }, []);
 
-  // Variáveis derivadas
   const numSelected = table.getSelectedRowModel().rows.length;
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map(
     (row) => (row.original as TicketComRelacoes).id,
   );
 
-  // Handle Bulk Update
   const handleBulkUpdate = async (action: 'status' | 'technician') => {
     setIsLoading(true);
     let body = {};
@@ -204,7 +219,6 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  // Handle Delete
   const handleDeleteSelected = async () => {
     setIsLoading(true);
 
@@ -231,7 +245,6 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  // Handle Export Excel/CSV - ADAPTADO PARA ticketId
   const handleExportExcelCsv = async (format: 'xlsx' | 'csv') => {
     if (numSelected === 0) {
       toast.error('Nenhum ticket selecionado para exportar.');
@@ -247,7 +260,7 @@ export function DataTable<TData, TValue>({
       const ticket = row.original as TicketComRelacoes;
       return {
         'ID do Ticket':
-          ticket.ticketId || `#${ticket.id.substring(ticket.id.length - 6)}`, // USA ticketId
+          ticket.ticketId || `#${ticket.id.substring(ticket.id.length - 6)}`,
         Título: ticket.title,
         Departamento: ticket.area.name,
         Prioridade: ticket.priority,
@@ -301,7 +314,6 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  // Handle Export PDF - ADAPTADO PARA ticketId
   const handleExportPdf = () => {
     if (numSelected === 0) {
       toast.error('Nenhum ticket selecionado para exportar.');
@@ -326,7 +338,7 @@ export function DataTable<TData, TValue>({
       const body = selectedRows.map((row) => {
         const ticket = row.original as TicketComRelacoes;
         return [
-          ticket.ticketId || `#${ticket.id.substring(ticket.id.length - 6)}`, // USA ticketId
+          ticket.ticketId || `#${ticket.id.substring(ticket.id.length - 6)}`,
           ticket.title,
           ticket.status,
           ticket.priority,
@@ -340,9 +352,8 @@ export function DataTable<TData, TValue>({
 
       const doc = new jsPDF();
 
-      // Cabeçalho do PDF
       const logoBase64 =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABCSURBVFhH7c4xEQAgDMCw/HN8G7aBIAiCERBERAgiIAhBRISIIARBRISIIARBRISIIARBRIRIJPkH6eYADi6r/wAAAABJRU5ErkJggg==';
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABCSURBVFhH7c4xEQAgDMCw/HN8G7aBIAiCERBERAgiIAhBRISIIARBRISIIARBRIRIJPkH6eYADi6r/wAAAABJRU5ErkJggg==';
       doc.addImage(logoBase64, 'PNG', 14, 10, 20, 20);
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
@@ -358,7 +369,6 @@ export function DataTable<TData, TValue>({
         { align: 'right' },
       );
 
-      // Tabela do PDF
       autoTable(doc, {
         startY: 35,
         head: head,
@@ -398,160 +408,237 @@ export function DataTable<TData, TValue>({
   };
 
   return (
-    <Card>
-      <CardContent className="space-y-4 pt-6">
+    <Card className="border-0 bg-white p-4 shadow-xl sm:p-6 dark:bg-slate-900">
+      <CardContent className="space-y-4 p-0">
         {/* TOOLBAR DE AÇÕES EM LOTE */}
         <div
           className={cn(
-            'space-y-4 rounded-lg border p-4',
-            numSelected > 0 ? 'bg-muted/50' : 'hidden',
+            'animate-in slide-in-from-top-2 relative overflow-hidden rounded-xl border-2 border-dashed p-4 transition-all duration-300 sm:p-6',
+            numSelected > 0
+              ? 'border-blue-300 bg-linear-to-br from-blue-50 to-indigo-50 dark:border-blue-700 dark:from-blue-950/30 dark:to-indigo-950/30'
+              : 'hidden',
           )}
         >
-          {/* Linha 1: Contagem e Ações Finais */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-muted-foreground flex-1 text-sm font-medium">
-              {numSelected} ticket(s) selecionado(s)
-            </div>
+          {/* Gradient decorativo */}
+          {numSelected > 0 && (
+            <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-indigo-500" />
+          )}
 
-            <div className="flex items-center gap-2">
-              {/* Dropdown de Exportar */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={isLoading}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Exportar
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => handleExportExcelCsv('xlsx')}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
-                    Excel (.xlsx)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportExcelCsv('csv')}>
-                    <FileSpreadsheet className="mr-2 h-4 w-4 text-blue-600" />
-                    CSV (.csv)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportPdf}>
-                    <FileSpreadsheet className="mr-2 h-4 w-4 text-red-600" />
-                    PDF (.pdf)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          <div className="space-y-4">
+            {/* Header com contador */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 shadow-lg">
+                  <CheckSquare className="h-5 w-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-bold text-slate-900 md:text-lg dark:text-white">
+                      {numSelected} selecionado{numSelected !== 1 ? 's' : ''}
+                    </span>
+                    <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    Aplicar ações em lote aos tickets selecionados
+                  </p>
+                </div>
+              </div>
 
-              {/* Botão de Excluir */}
-              <AlertDialog
-                open={isDeleteAlertOpen}
-                onOpenChange={setIsDeleteAlertOpen}
-              >
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" disabled={isLoading}>
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash className="mr-2 h-4 w-4" />
-                    )}
-                    Excluir
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Tem a certeza absoluta?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta ação não pode ser desfeita. {numSelected} chamado(s)
-                      serão permanentemente excluídos da base de dados.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeleteSelected}
-                      className="bg-destructive hover:bg-destructive/90"
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Dropdown de Exportar */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       disabled={isLoading}
+                      className="border-2 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                     >
-                      {isLoading ? 'Excluindo...' : 'Sim, excluir'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
+                      <Download className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Exportar</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel className="text-xs font-semibold">
+                      Escolha o formato
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleExportExcelCsv('xlsx')}
+                      className="cursor-pointer"
+                    >
+                      <Sheet className="mr-2 h-4 w-4 text-emerald-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Excel</span>
+                        <span className="text-muted-foreground text-xs">
+                          .xlsx
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleExportExcelCsv('csv')}
+                      className="cursor-pointer"
+                    >
+                      <FileSpreadsheet className="mr-2 h-4 w-4 text-blue-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">CSV</span>
+                        <span className="text-muted-foreground text-xs">
+                          .csv
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleExportPdf}
+                      className="cursor-pointer"
+                    >
+                      <FileText className="mr-2 h-4 w-4 text-red-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">PDF</span>
+                        <span className="text-muted-foreground text-xs">
+                          .pdf
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-          {/* Linha 2: Ações de Atualização */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-end">
-            {/* Atualizar Status */}
-            <div className="flex-1 space-y-2">
-              <Label>Atualizar Status</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={statusToAction}
-                  onValueChange={setStatusToAction}
-                  disabled={isLoading}
+                {/* Botão de Excluir */}
+                <AlertDialog
+                  open={isDeleteAlertOpen}
+                  onOpenChange={setIsDeleteAlertOpen}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar status..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  onClick={() => handleBulkUpdate('status')}
-                  disabled={isLoading || !statusToAction}
-                >
-                  Aplicar
-                </Button>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={isLoading}
+                      className="border-2 border-red-300 dark:border-red-800"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
+                      ) : (
+                        <Trash className="h-4 w-4 sm:mr-2" />
+                      )}
+                      <span className="hidden sm:inline">Excluir</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="max-w-md">
+                    <AlertDialogHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-lg bg-red-100 p-2 dark:bg-red-950/30">
+                          <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                        </div>
+                        <AlertDialogTitle>
+                          Tem a certeza absoluta?
+                        </AlertDialogTitle>
+                      </div>
+                      <AlertDialogDescription className="pt-2">
+                        Esta ação não pode ser desfeita.{' '}
+                        <strong>{numSelected} chamado(s)</strong> serão
+                        permanentemente excluídos da base de dados.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteSelected}
+                        className="bg-destructive hover:bg-destructive/90"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? 'Excluindo...' : 'Sim, excluir'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
 
-            {/* Atribuir Usuário */}
-            <div className="flex-1 space-y-2">
-              <Label>Atribuir Usuário</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={technicianToAction}
-                  onValueChange={setTechnicianToAction}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar usuário..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassign">Não atribuído</SelectItem>
-                    {technicians.map((tech) => (
-                      <SelectItem key={tech.id} value={tech.id}>
-                        {tech.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  onClick={() => handleBulkUpdate('technician')}
-                  disabled={isLoading || !technicianToAction}
-                >
-                  Atribuir
-                </Button>
+            {/* Ações de Atualização */}
+            <div className="grid grid-cols-1 gap-4 rounded-lg border-2 border-slate-200 bg-white p-4 lg:grid-cols-2 dark:border-slate-700 dark:bg-slate-900">
+              {/* Atualizar Status */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-xs font-semibold">
+                  <RefreshCw className="h-3.5 w-3.5 text-blue-600" />
+                  Atualizar Status
+                </Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={statusToAction}
+                    onValueChange={setStatusToAction}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="border-2 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                      <SelectValue placeholder="Selecionar status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={() => handleBulkUpdate('status')}
+                    disabled={isLoading || !statusToAction}
+                    className="shrink-0 bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+
+              {/* Atribuir Usuário */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-xs font-semibold">
+                  <UserPlus className="h-3.5 w-3.5 text-purple-600" />
+                  Atribuir Técnico
+                </Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={technicianToAction}
+                    onValueChange={setTechnicianToAction}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="border-2 transition-all focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20">
+                      <SelectValue placeholder="Selecionar técnico..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassign">Não atribuído</SelectItem>
+                      {technicians.map((tech) => (
+                        <SelectItem key={tech.id} value={tech.id}>
+                          {tech.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={() => handleBulkUpdate('technician')}
+                    disabled={isLoading || !technicianToAction}
+                    className="shrink-0 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                  >
+                    Atribuir
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Tabela */}
-        <div className="rounded-md border">
+        <div className="overflow-x-auto rounded-lg border-2 border-slate-200 dark:border-slate-800">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
+                <TableRow
+                  key={headerGroup.id}
+                  className="bg-slate-50 dark:bg-slate-900"
+                >
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id}>
+                      <TableHead key={header.id} className="font-semibold">
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -566,33 +653,168 @@ export function DataTable<TData, TValue>({
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                table.getRowModel().rows.map((row) => {
+                  // Obter os dados da linha (necessário para o ID)
+                  const ticket = row.original as TicketComRelacoes;
+
+                  return (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                      className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
+                      onClick={() => {
+                        // Navega para a página de detalhes do ticket
+                        router.push(`/tickets/${ticket.id}`);
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => {
+                        // VERIFICAR SE A CÉLULA É INTERATIVA
+                        const isInteractiveCell =
+                          cell.column.id === 'select' || // O Checkbox
+                          cell.column.id === 'actions' || // O Menu Dropdown
+                          cell.column.id === 'ticketId'; // O Link do ID
+
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            // 'stopPropagation'
+                            onClick={
+                              isInteractiveCell
+                                ? (e) => e.stopPropagation()
+                                : undefined
+                            }
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell
                     colSpan={columns.length}
-                    className="h-24 text-center"
+                    className="h-32 text-center"
                   >
-                    Nenhum resultado encontrado.
+                    <div className="flex flex-col items-center gap-2 text-slate-500">
+                      <FileDown className="h-8 w-8" />
+                      <p className="text-sm font-medium">
+                        Nenhum resultado encontrado.
+                      </p>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Paginação Moderna */}
+        <div className="flex flex-col gap-4 rounded-lg border-2 border-slate-200 bg-linear-to-br from-slate-50 to-white p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:from-slate-900 dark:to-slate-800">
+          {/* Info e Seletor de Linhas */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex items-center gap-2">
+              <Label
+                htmlFor="rows-per-page"
+                className="text-xs font-medium text-slate-600 dark:text-slate-400"
+              >
+                Linhas por página:
+              </Label>
+              <Select
+                value={`${table.getState().pagination.pageSize}`}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
+                }}
+              >
+                <SelectTrigger
+                  id="rows-per-page"
+                  className="h-8 w-[70px] border-2"
+                >
+                  <SelectValue
+                    placeholder={table.getState().pagination.pageSize}
+                  />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[5, 10, 20, 30, 50, 100].map((pageSize) => (
+                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="text-xs font-medium text-slate-600 dark:text-slate-400">
+              Mostrando{' '}
+              {table.getState().pagination.pageIndex *
+                table.getState().pagination.pageSize +
+                1}{' '}
+              a{' '}
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) *
+                  table.getState().pagination.pageSize,
+                table.getFilteredRowModel().rows.length,
+              )}{' '}
+              de {table.getFilteredRowModel().rows.length} resultados
+            </div>
+          </div>
+
+          {/* Controles de Navegação */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                Página
+              </span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-md border-2 border-blue-500 bg-blue-50 text-xs font-bold text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
+                {table.getState().pagination.pageIndex + 1}
+              </span>
+              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                de {table.getPageCount()}
+              </span>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

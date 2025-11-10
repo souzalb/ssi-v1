@@ -134,7 +134,7 @@ export function MobileBottomNav({}: MobileBottomNavProps) {
   return (
     <>
       {/* Safe area para iPhones e Android com gestos (placeholder) */}
-      <div className="h-16 md:hidden" />
+      <div className="h-16 md:hidden dark:bg-slate-950" />
 
       {/* Navigation bar com glassmorphism */}
       <nav

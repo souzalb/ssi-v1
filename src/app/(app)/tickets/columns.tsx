@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { Ticket, User, Area, Status, Priority } from '@prisma/client';
+import { Ticket, User, Area, Status, Priority, AreaName } from '@prisma/client';
 import Link from 'next/link';
 
 // Componentes Shadcn
@@ -62,6 +62,22 @@ const statusColors: Record<Status, string> = {
     'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
   CANCELLED:
     'bg-red-100 text-red-800 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+};
+
+// Helper para Cores dos Badges - Área/Departamento
+const areaColors: Record<AreaName, string> = {
+  TI: 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800',
+  BUILDING:
+    'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-950 dark:text-lime-300 dark:border-lime-800',
+  ELECTRICAL:
+    'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+};
+
+// Labels traduzidas - Área/Departamento
+const areaLabels: Record<AreaName, string> = {
+  TI: 'T.I.',
+  BUILDING: 'Predial',
+  ELECTRICAL: 'Elétrica',
 };
 
 // Helper para Cores dos Badges - Prioridade
@@ -177,14 +193,21 @@ export const columns: ColumnDef<TicketComRelacoes>[] = [
   {
     accessorKey: 'area',
     header: 'Departamento',
-    cell: ({ row }) => (
-      <Badge
-        variant="outline"
-        className="border-slate-300 bg-slate-50 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-      >
-        {row.original.area.name}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const area = row.original.area.name;
+      return (
+        <Badge
+          className={cn(
+            'font-semibold',
+            // Aplica a cor do mapa
+            areaColors[area] || statusColors.ON_HOLD, // Fallback
+          )}
+        >
+          {/* Aplica a tradução do mapa */}
+          {areaLabels[area] || area}
+        </Badge>
+      );
+    },
   },
 
   // 5. Coluna Prioridade (com cor e label traduzida)

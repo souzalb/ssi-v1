@@ -32,8 +32,8 @@ export function NavLink({ href, children }: NavLinkProps) {
 
         // Estilos Condicionais
         isActive
-          ? 'bg-muted text-primary' // <-- ESTILO ATIVO (fundo destacado)
-          : 'text-muted-foreground hover:text-primary hover:bg-muted/50', // Estilo Inativo
+          ? 'bg-muted text-primary dark:bg-slate-800/80' // <-- ESTILO ATIVO (fundo destacado)
+          : 'text-muted-foreground hover:text-primary hover:bg-muted/50 hover:dark:bg-slate-700/30', // Estilo Inativo
       )}
     >
       {children}

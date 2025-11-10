@@ -224,11 +224,25 @@ export function Footer({
               <span>Todos os direitos reservados.</span>
             </div>
 
-            {/* Language/Theme selector (placeholder) */}
-            <div className="flex items-center gap-3">
-              <button className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
-                🇧🇷 Português
-              </button>
+            <div className="flex flex-col gap-2 md:flex-row">
+              <div className="flex flex-col items-center gap-2 text-sm text-slate-600 md:flex-row dark:text-slate-400">
+                Desenvolvido por
+                <Link
+                  href="https://github.com/souzalb"
+                  className="font-semibold"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Lincoln Souza.
+                </Link>
+              </div>
+
+              {/* Language (placeholder) */}
+              <div className="flex items-center gap-3">
+                <button className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                  🇧🇷 Português
+                </button>
+              </div>
             </div>
           </div>
         </div>
