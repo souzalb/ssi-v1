@@ -139,15 +139,15 @@ export function CommentSection({
       : comments;
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-xl">
+    <Card className="relative gap-0 overflow-hidden border-0 shadow-xl">
       {/* Gradient decorativo no topo */}
-      <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500" />
+      <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-pink-500 via-rose-500 to-orange-500" />
 
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-xl">
-              <div className="rounded-lg bg-gradient-to-br from-pink-500 to-rose-600 p-2 shadow-lg">
+              <div className="rounded-lg bg-linear-to-br from-pink-500 to-rose-600 p-2 shadow-lg">
                 <MessageSquare className="h-4 w-4 text-white" />
               </div>
               Histórico do Chamado
@@ -159,7 +159,7 @@ export function CommentSection({
 
           {/* Badge contador */}
           <div className="flex items-center gap-2">
-            <Badge className="gap-1.5 border-0 bg-gradient-to-r from-pink-500 to-rose-600 px-3 py-1.5 text-white shadow-lg shadow-pink-500/30">
+            <Badge className="gap-1.5 border-0 bg-linear-to-r from-pink-500 to-rose-600 px-3 py-1.5 text-white shadow-lg shadow-pink-500/30">
               <MessageCircle className="h-3.5 w-3.5" />
               <span className="text-xs font-semibold">
                 {filteredComments.length}
@@ -173,8 +173,8 @@ export function CommentSection({
         {/* Lista de Comentários */}
         <div className="space-y-4">
           {filteredComments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white py-12 dark:border-slate-800 dark:from-slate-900 dark:to-slate-800">
-              <div className="mb-3 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 p-4 dark:from-slate-800 dark:to-slate-700">
+            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-linear-to-br from-slate-50 to-white py-12 dark:border-slate-800 dark:from-slate-900 dark:to-slate-800">
+              <div className="mb-3 rounded-full bg-linear-to-br from-slate-100 to-slate-200 p-4 dark:from-slate-800 dark:to-slate-700">
                 <MessageSquare className="h-8 w-8 text-slate-400 dark:text-slate-500" />
               </div>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -187,7 +187,7 @@ export function CommentSection({
           ) : (
             <div className="relative space-y-4">
               {/* Linha vertical de timeline */}
-              <div className="absolute top-8 bottom-8 left-5 w-0.5 bg-gradient-to-b from-pink-200 via-slate-200 to-slate-200 sm:left-6 dark:from-pink-800 dark:via-slate-800 dark:to-slate-800" />
+              <div className="absolute top-8 bottom-8 left-5 w-0.5 bg-linear-to-b from-pink-200 via-slate-200 to-slate-200 sm:left-6 dark:from-pink-800 dark:via-slate-800 dark:to-slate-800" />
 
               {filteredComments.map((comment, index) => {
                 const roleConfig = ROLE_CONFIG[comment.user.role];
@@ -206,25 +206,25 @@ export function CommentSection({
                     <div
                       className={`relative rounded-xl border-2 p-4 transition-all hover:shadow-lg ${
                         isInternal
-                          ? 'border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30'
+                          ? 'border-amber-300 bg-linear-to-br from-amber-50 to-orange-50 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30'
                           : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'
                       }`}
                     >
                       {/* Indicador de timeline */}
                       <div
-                        className={`absolute top-4 -left-[26px] h-4 w-4 rounded-full border-4 border-white shadow-lg sm:-left-[30px] dark:border-slate-950 ${
+                        className={`absolute -top-2 -left-2 h-4 w-4 rounded-full border-4 border-white shadow-lg dark:border-slate-950 ${
                           isFirst
-                            ? 'bg-gradient-to-br from-pink-500 to-rose-600'
+                            ? 'bg-linear-to-br from-pink-500 to-rose-600'
                             : isLast
-                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
-                              : 'bg-gradient-to-br from-slate-400 to-slate-500'
+                              ? 'bg-linear-to-br from-emerald-500 to-teal-600'
+                              : 'bg-linear-to-br from-slate-400 to-slate-500'
                         }`}
                       />
 
                       {/* Badge de nota interna */}
                       {isInternal && (
                         <div className="absolute -top-2 right-4">
-                          <Badge className="gap-1 border-0 bg-gradient-to-r from-amber-500 to-orange-600 px-2 py-0.5 text-white shadow-lg shadow-amber-500/30">
+                          <Badge className="gap-1 border-0 bg-linear-to-r from-amber-500 to-orange-600 px-2 py-0.5 text-white shadow-lg shadow-amber-500/30">
                             <Lock className="h-3 w-3" />
                             <span className="text-xs font-semibold">
                               Interno
@@ -239,14 +239,14 @@ export function CommentSection({
                           <Avatar className="h-10 w-10 border-2 border-white shadow-lg sm:h-12 sm:w-12 dark:border-slate-900">
                             <AvatarImage src={comment.user.photoUrl || ''} />
                             <AvatarFallback
-                              className={`bg-gradient-to-br ${roleConfig.gradient} text-sm font-bold text-white`}
+                              className={`bg-linear-to-br ${roleConfig.gradient} text-sm font-bold text-white`}
                             >
                               {comment.user.name.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           {/* Indicador de role */}
                           <div
-                            className={`absolute -right-1 -bottom-1 rounded-full border-2 border-white bg-gradient-to-br ${roleConfig.gradient} p-1 shadow-md dark:border-slate-900`}
+                            className={`absolute -top-1 -right-1 rounded-full border-2 border-white bg-linear-to-br ${roleConfig.gradient} p-1 shadow-md dark:border-slate-900`}
                           >
                             {comment.user.role === Role.COMMON ? (
                               <IconUser className="h-2.5 w-2.5 text-white" />
@@ -297,9 +297,9 @@ export function CommentSection({
         </div>
 
         {/* Formulário de Novo Comentário */}
-        <div className="rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:from-slate-900 dark:to-slate-800">
+        <div className="rounded-xl border-2 border-slate-200 bg-linear-to-br from-slate-50 to-white p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:from-slate-900 dark:to-slate-800">
           <div className="mb-4 flex items-center gap-2">
-            <div className="rounded-lg bg-gradient-to-br from-pink-500 to-rose-600 p-2 shadow-lg">
+            <div className="rounded-lg bg-linear-to-br from-pink-500 to-rose-600 p-2 shadow-lg">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <div>
@@ -345,7 +345,7 @@ export function CommentSection({
                   name="isInternal"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-start gap-3 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30">
+                      <div className="flex items-start gap-3 rounded-xl border-2 border-amber-200 bg-linear-to-br from-amber-50 to-orange-50 p-4 dark:border-amber-800 dark:from-amber-950/30 dark:to-orange-950/30">
                         <FormControl>
                           <Checkbox
                             checked={field.value}
@@ -386,7 +386,7 @@ export function CommentSection({
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-pink-600 to-rose-600 shadow-lg shadow-pink-500/30 hover:from-pink-700 hover:to-rose-700 sm:w-auto"
+                  className="w-full bg-linear-to-r from-pink-600 to-rose-600 shadow-lg shadow-pink-500/30 hover:from-pink-700 hover:to-rose-700 sm:w-auto"
                 >
                   {isLoading ? (
                     <>
