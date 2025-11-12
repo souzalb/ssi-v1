@@ -3,6 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useState, useEffect } from 'react';
 import { formatISO } from 'date-fns';
+import { AreaName } from '@prisma/client';
 
 import {
   Select,
@@ -28,11 +29,11 @@ import {
   CheckCircle2,
   Building,
 } from 'lucide-react';
-import { useDebounce } from '../../../../hooks/use-debounce';
-import { DatePicker } from '@/app/_components/date-picker';
-import { AreaName } from '@prisma/client';
-import { cn } from '@/app/_lib/utils';
+import { useDebounce } from '../../../../hooks/use-debounce'; // (Ajuste o caminho se necessário)
+import { DatePicker } from '@/app/_components/date-picker'; // (Ajuste o caminho)
+import { cn } from '@/app/_lib/utils'; // (Ajuste o caminho)
 
+// --- Mapas de Labels e Cores (sem alteração) ---
 const statusLabels: Record<string, string> = {
   OPEN: 'Aberto',
   ASSIGNED: 'Atribuído',
@@ -42,15 +43,12 @@ const statusLabels: Record<string, string> = {
   CLOSED: 'Fechado',
   CANCELLED: 'Cancelado',
 };
-
 const priorityLabels: Record<string, string> = {
   LOW: 'Baixa',
   MEDIUM: 'Média',
   HIGH: 'Alta',
   URGENT: 'Urgente',
 };
-
-// Helper para Cores dos Badges - Área/Departamento
 const areaColors: Record<AreaName, string> = {
   TI: 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800',
   BUILDING:
@@ -58,15 +56,11 @@ const areaColors: Record<AreaName, string> = {
   ELECTRICAL:
     'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
 };
-
-// Labels traduzidas - Área/Departamento
 const areaLabels: Record<AreaName, string> = {
   TI: 'T.I.',
   BUILDING: 'Predial',
   ELECTRICAL: 'Elétrica',
 };
-
-// Configuração de cores para badges
 const statusColors: Record<string, string> = {
   OPEN: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400',
   ASSIGNED:
@@ -80,7 +74,6 @@ const statusColors: Record<string, string> = {
     'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400',
   CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400',
 };
-
 const priorityColors: Record<string, string> = {
   LOW: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400',
   MEDIUM:
@@ -88,6 +81,7 @@ const priorityColors: Record<string, string> = {
   HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-500',
   URGENT: 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-500',
 };
+// --- Fim dos Mapas ---
 
 interface TicketFiltersProps {
   statuses: string[];
@@ -108,6 +102,7 @@ export function TicketFilters({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // --- 1. ESTADOS DE FILTRO (APENAS OS NECESSÁRIOS) ---
   const [startDate, setStartDate] = useState<Date | undefined>(
     searchParams.get('startDate')
       ? new Date(searchParams.get('startDate')!)
@@ -121,64 +116,45 @@ export function TicketFilters({
   const [searchTerm, setSearchTerm] = useState(
     searchParams.get('search') || '',
   );
-  const [manuallyExpanded, setManuallyExpanded] = useState(false);
-
-  // Estados dos filtros
-  const [statusFilter, setStatusFilter] = useState(
-    searchParams.get('status') || '',
-  );
-  const [priorityFilter, setPriorityFilter] = useState(
-    searchParams.get('priority') || '',
-  );
-  const [areaFilter, setAreaFilter] = useState(searchParams.get('area') || '');
-  const [technicianFilter, setTechnicianFilter] = useState(
-    searchParams.get('technician') || '',
-  );
-
-  const activeFiltersCount = [
-    statusFilter,
-    priorityFilter,
-    areaFilter,
-    technicianFilter,
-  ].filter(Boolean).length;
-
-  // Determina se deve mostrar filtros avançados (estado derivado)
-  const showAdvancedFilters = activeFiltersCount > 0 || manuallyExpanded;
-
-  const handleFilterChange = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-
-    if (statusFilter) params.set('status', statusFilter);
-    else params.delete('status');
-
-    if (priorityFilter) params.set('priority', priorityFilter);
-    else params.delete('priority');
-
-    if (areaFilter) params.set('area', areaFilter);
-    else params.delete('area');
-
-    if (technicianFilter) params.set('technician', technicianFilter);
-    else params.delete('technician');
-
-    router.push(`${pathname}?${params.toString()}`);
-  }, [
-    statusFilter,
-    priorityFilter,
-    areaFilter,
-    technicianFilter,
-    pathname,
-    router,
-    searchParams,
-  ]);
+  // (Os estados 'statusFilter', 'priorityFilter', etc. foram REMOVIDOS)
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+  // --- 2. LEITURA DA "FONTE DA VERDADE" (URL) ---
   const currentStatus = searchParams.get('status') || 'all';
   const currentPriority = searchParams.get('priority') || 'all';
   const currentTechnician = searchParams.get('technician') || 'all';
   const currentArea = searchParams.get('area') || 'all';
+  const currentSearch = searchParams.get('search');
+  const currentStartDate = searchParams.get('startDate');
+  const currentEndDate = searchParams.get('endDate');
+
   const selectedArea = areas.find((a) => a.id === currentArea);
 
+  // --- 3. CONTAGEM DE FILTROS (CORRIGIDA) ---
+  const activeFiltersCount = [
+    !!currentSearch, // Verdadeiro se a string não for nula ou vazia
+    currentStatus !== 'all',
+    currentPriority !== 'all',
+    currentTechnician !== 'all',
+    currentArea !== 'all',
+    !!currentStartDate,
+    !!currentEndDate,
+  ].filter(Boolean).length;
+
+  const isFiltered = activeFiltersCount > 0;
+
+  // --- 4. LÓGICA DE ESTADO DERIVADO (CORRIGIDA) ---
+  // (Resolve o erro 'set-state-in-effect' do ESLint)
+  const [manuallyExpanded, setManuallyExpanded] = useState<boolean | undefined>(
+    undefined,
+  );
+  const showAdvancedFilters =
+    manuallyExpanded === true || (manuallyExpanded === undefined && isFiltered);
+
+  // (O useEffect problemático foi removido)
+
+  // --- 5. HANDLERS (Unificados) ---
   const createQueryString = useCallback(
     (params: URLSearchParams, name: string, value: string) => {
       if (value === 'all' || value === '') {
@@ -242,25 +218,15 @@ export function TicketFilters({
   }, [startDate, endDate, searchParams, pathname, router]);
 
   const handleClearFilters = useCallback(() => {
-    setStatusFilter('');
-    setPriorityFilter('');
-    setAreaFilter('');
-    setTechnicianFilter('');
-    setManuallyExpanded(false);
+    setSearchTerm('');
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setManuallyExpanded(false); // Fecha o menu
     router.push(pathname);
   }, [pathname, router]);
 
-  const isFiltered =
-    searchParams.has('search') ||
-    searchParams.has('status') ||
-    searchParams.has('priority') ||
-    searchParams.has('startDate') ||
-    searchParams.has('endDate') ||
-    searchParams.has('area') ||
-    searchParams.has('technician');
-
   const toggleAdvancedFilters = () => {
-    setManuallyExpanded(!manuallyExpanded);
+    setManuallyExpanded(!showAdvancedFilters);
   };
 
   return (
@@ -287,6 +253,8 @@ export function TicketFilters({
               </div>
             </div>
 
+            {/* --- 6. BADGE DE CONTAGEM CORRIGIDO --- */}
+            {/* Agora lê o 'activeFiltersCount' correto */}
             {isFiltered && (
               <div className="flex items-center gap-2">
                 <Badge
@@ -315,7 +283,7 @@ export function TicketFilters({
           <div className="relative">
             <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <Input
-              placeholder="Pesquisar por ID (ex: TK-TI-0001), título ou equipamento..."
+              placeholder="Pesquisar por ID (ex: TI-1001), título ou equipamento..."
               className="h-12 border-2 pr-4 pl-11 text-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -347,6 +315,7 @@ export function TicketFilters({
                 </Badge>
               )}
             </div>
+            {/* Agora lê o 'showAdvancedFilters' derivado */}
             {showAdvancedFilters ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -358,7 +327,7 @@ export function TicketFilters({
           {showAdvancedFilters && (
             <div className="animate-in slide-in-from-top-2 space-y-4 rounded-lg border-2 border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
-                {/* Filtro Status */}
+                {/* Filtro Status (lê 'currentStatus' da URL) */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1.5 text-xs font-semibold">
                     <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
@@ -389,7 +358,7 @@ export function TicketFilters({
                   </Select>
                 </div>
 
-                {/* Filtro Prioridade */}
+                {/* Filtro Prioridade (lê 'currentPriority' da URL) */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1.5 text-xs font-semibold">
                     <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
@@ -420,7 +389,7 @@ export function TicketFilters({
                   </Select>
                 </div>
 
-                {/* Filtro Técnico */}
+                {/* Filtro Técnico (lê 'currentTechnician' da URL) */}
                 {technicians.length > 0 && (
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1.5 text-xs font-semibold">
@@ -451,6 +420,7 @@ export function TicketFilters({
                   </div>
                 )}
 
+                {/* Filtro Área (lê 'currentArea' da URL) */}
                 {isSuperAdmin && (
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1.5 text-xs font-semibold">
@@ -514,18 +484,17 @@ export function TicketFilters({
         </div>
       </div>
 
-      {/* Badges de Filtros Ativos */}
+      {/* Badges de Filtros Ativos (sem alteração, mas agora usa 'activeFiltersCount' correto) */}
       {isFiltered && (
         <div className="flex flex-wrap gap-2">
-          {searchParams.get('search') && (
+          {/* Badge de Search (agora lê 'currentSearch') */}
+          {currentSearch && (
             <Badge
               variant="secondary"
               className="group gap-2 border-blue-200 bg-blue-50 pr-1 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400"
             >
               <Search className="h-3 w-3" />
-              <span className="max-w-[200px] truncate">
-                {searchParams.get('search')}
-              </span>
+              <span className="max-w-[200px] truncate">{currentSearch}</span>
               <button
                 onClick={() => {
                   setSearchTerm('');
@@ -541,6 +510,7 @@ export function TicketFilters({
             </Badge>
           )}
 
+          {/* Badge de Status */}
           {currentStatus !== 'all' && (
             <Badge
               className={`group gap-2 border-0 pr-1 ${statusColors[currentStatus]}`}
