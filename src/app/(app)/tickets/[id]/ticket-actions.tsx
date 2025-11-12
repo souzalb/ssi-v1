@@ -220,13 +220,13 @@ export function TicketActions({ ticket, currentUser }: TicketActionsProps) {
   return (
     <Card className="relative overflow-hidden border-0 shadow-xl">
       {/* Gradient decorativo no topo */}
-      <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500" />
+      <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-indigo-500" />
 
-      <CardHeader className="pb-4">
+      <CardHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-xl">
-              <div className="rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 p-2 shadow-lg">
+              <div className="rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 p-2 shadow-lg">
                 <Zap className="h-4 w-4 text-white" />
               </div>
               Ações do Chamado
@@ -247,9 +247,9 @@ export function TicketActions({ ticket, currentUser }: TicketActionsProps) {
       <CardContent className="space-y-6">
         {/* Formulário de Atribuição */}
         {canAssignTech && (
-          <div className="space-y-4 rounded-xl border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-4 dark:border-purple-800 dark:from-purple-950/30 dark:to-indigo-950/30">
+          <div className="space-y-4 rounded-xl border-2 border-purple-200 bg-linear-to-br from-purple-50 to-indigo-50 p-4 dark:border-purple-800 dark:from-purple-950/30 dark:to-indigo-950/30">
             <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 p-2 shadow-lg">
+              <div className="rounded-lg bg-linear-to-br from-purple-500 to-indigo-600 p-2 shadow-lg">
                 <UserPlus className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1">
@@ -315,7 +315,7 @@ export function TicketActions({ ticket, currentUser }: TicketActionsProps) {
                 <Button
                   type="submit"
                   size="sm"
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg shadow-purple-500/30 hover:from-purple-700 hover:to-indigo-700"
+                  className="w-full bg-linear-to-r from-purple-600 to-indigo-600 shadow-lg shadow-purple-500/30 hover:from-purple-700 hover:to-indigo-700"
                   disabled={isAssignLoading}
                 >
                   {isAssignLoading ? (
@@ -336,9 +336,9 @@ export function TicketActions({ ticket, currentUser }: TicketActionsProps) {
         )}
 
         {/* Formulário de Status */}
-        <div className="space-y-4 rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 dark:border-blue-800 dark:from-blue-950/30 dark:to-indigo-950/30">
+        <div className="space-y-4 rounded-xl border-2 border-blue-200 bg-linear-to-br from-blue-50 to-indigo-50 p-4 dark:border-blue-800 dark:from-blue-950/30 dark:to-indigo-950/30">
           <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 p-2 shadow-lg">
+            <div className="rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 p-2 shadow-lg">
               <RefreshCw className="h-4 w-4 text-white" />
             </div>
             <div className="flex-1">
@@ -405,7 +405,7 @@ export function TicketActions({ ticket, currentUser }: TicketActionsProps) {
               <Button
                 type="submit"
                 size="sm"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30 hover:from-blue-700 hover:to-indigo-700"
+                className="w-full bg-linear-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30 hover:from-blue-700 hover:to-indigo-700"
                 disabled={isStatusLoading}
               >
                 {isStatusLoading ? (
