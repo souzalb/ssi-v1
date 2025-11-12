@@ -110,14 +110,14 @@ export function AttachmentList({ attachments }: AttachmentListProps) {
 
   if (!attachments || attachments.length === 0) {
     return (
-      <Card className="relative overflow-hidden border-0 shadow-xl">
-        <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+      <Card className="relative gap-0 overflow-hidden border-0 shadow-xl">
+        <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
-        <CardHeader className="pb-4">
+        <CardHeader className="p-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-xl">
-                <div className="rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 p-2 shadow-lg">
+                <div className="rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 p-2 shadow-lg">
                   <Paperclip className="h-4 w-4 text-white" />
                 </div>
                 Anexos
@@ -130,8 +130,8 @@ export function AttachmentList({ attachments }: AttachmentListProps) {
         </CardHeader>
 
         <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white py-12 dark:border-slate-800 dark:from-slate-900 dark:to-slate-800">
-            <div className="mb-3 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 p-4 dark:from-slate-800 dark:to-slate-700">
+          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-linear-to-br from-slate-50 to-white py-12 dark:border-slate-800 dark:from-slate-900 dark:to-slate-800">
+            <div className="mb-3 rounded-full bg-linear-to-br from-slate-100 to-slate-200 p-4 dark:from-slate-800 dark:to-slate-700">
               <Folder className="h-8 w-8 text-slate-400 dark:text-slate-500" />
             </div>
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -148,13 +148,13 @@ export function AttachmentList({ attachments }: AttachmentListProps) {
 
   return (
     <Card className="relative overflow-hidden border-0 shadow-xl">
-      <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+      <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-xl">
-              <div className="rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 p-2 shadow-lg">
+              <div className="rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 p-2 shadow-lg">
                 <Paperclip className="h-4 w-4 text-white" />
               </div>
               Anexos
@@ -166,7 +166,7 @@ export function AttachmentList({ attachments }: AttachmentListProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className="gap-1.5 border-0 bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-1.5 text-white shadow-lg shadow-indigo-500/30">
+            <Badge className="gap-1.5 border-0 bg-linear-to-r from-indigo-500 to-purple-600 px-3 py-1.5 text-white shadow-lg shadow-indigo-500/30">
               <Upload className="h-3.5 w-3.5" />
               <span className="text-xs font-semibold">
                 {attachments.length}
@@ -190,7 +190,7 @@ export function AttachmentList({ attachments }: AttachmentListProps) {
               >
                 {/* Indicador de hover animado */}
                 <div
-                  className={`absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r ${fileInfo.gradient} transition-all duration-300 group-hover:w-full`}
+                  className={`absolute bottom-0 left-0 h-1 w-0 bg-linear-to-r ${fileInfo.gradient} transition-all duration-300 group-hover:w-full`}
                 />
 
                 <div className="flex items-center gap-3 sm:gap-4">
@@ -278,7 +278,7 @@ export function AttachmentList({ attachments }: AttachmentListProps) {
         </div>
 
         {/* Card de resumo */}
-        <div className="mt-4 rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-4 dark:border-indigo-800 dark:from-indigo-950/30 dark:to-purple-950/30">
+        <div className="mt-4 rounded-xl border-2 border-indigo-200 bg-linear-to-br from-indigo-50 to-purple-50 p-4 dark:border-indigo-800 dark:from-indigo-950/30 dark:to-purple-950/30">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
               <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />

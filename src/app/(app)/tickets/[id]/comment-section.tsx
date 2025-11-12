@@ -223,7 +223,7 @@ export function CommentSection({
 
                       {/* Badge de nota interna */}
                       {isInternal && (
-                        <div className="absolute -top-2 right-4">
+                        <div className="absolute -top-3 right-4">
                           <Badge className="gap-1 border-0 bg-linear-to-r from-amber-500 to-orange-600 px-2 py-0.5 text-white shadow-lg shadow-amber-500/30">
                             <Lock className="h-3 w-3" />
                             <span className="text-xs font-semibold">
