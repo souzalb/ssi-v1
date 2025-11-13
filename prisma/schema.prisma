@@ -112,7 +112,7 @@ model Ticket {
   model       String // Ex: "Samsung Wind-Free"
   assetTag    String // Ex: "N/P 123456"
 
-  priority  Priority @default(MEDIUM)
+  priority  Priority @default(LOW)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
