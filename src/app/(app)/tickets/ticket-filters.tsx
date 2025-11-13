@@ -61,6 +61,7 @@ const areaLabels: Record<AreaName, string> = {
   BUILDING: 'Predial',
   ELECTRICAL: 'Elétrica',
 };
+
 const statusColors: Record<string, string> = {
   OPEN: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400',
   ASSIGNED:

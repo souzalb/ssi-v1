@@ -216,7 +216,7 @@ export default async function TicketDetailPage({
     PRIORITY_CONFIG[ticket.priority] || PRIORITY_CONFIG.MEDIUM;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen dark:bg-slate-950">
       <div className="mx-auto max-w-[1600px] space-y-6 p-4 md:p-6 lg:p-8">
         {/* Breadcrumb e Navegação */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -329,7 +329,7 @@ export default async function TicketDetailPage({
             </Card>
 
             {/* Descrição */}
-            <Card className="group relative overflow-hidden border-0 pt-1 shadow-xl backdrop-blur-xl transition-all">
+            <Card className="group relative overflow-hidden border-0 pt-1 shadow-xl backdrop-blur-xl transition-all dark:bg-slate-900">
               <div className="absolute top-0 right-0 left-0 h-1 rounded-t-2xl bg-linear-to-r from-emerald-500 to-teal-500" />
               <CardHeader className="border-b bg-linear-to-r from-emerald-50/80 to-teal-50/80 p-4 backdrop-blur-xl dark:from-emerald-950/30 dark:to-teal-950/30 [.border-b]:pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg font-bold sm:gap-3 sm:text-xl">
@@ -386,7 +386,7 @@ export default async function TicketDetailPage({
             {/* Card de Detalhes Rápidos */}
 
             {/* Equipamento */}
-            <Card className="group relative gap-0 overflow-hidden border-0 p-0 pt-1 shadow-xl backdrop-blur-xl transition-all">
+            <Card className="group relative gap-0 overflow-hidden border-0 p-0 pt-1 shadow-xl backdrop-blur-xl transition-all dark:bg-slate-900">
               <div className="absolute top-0 right-0 left-0 h-1 rounded-t-2xl bg-linear-to-r from-amber-500 to-orange-500" />
               <CardHeader className="border-b bg-linear-to-r from-amber-50/80 to-orange-50/80 p-4 backdrop-blur-xl dark:from-amber-950/30 dark:to-orange-950/30 [.border-b]:pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg font-bold sm:gap-3 sm:text-xl">
@@ -429,7 +429,7 @@ export default async function TicketDetailPage({
             </Card>
 
             {/* Detalhes */}
-            <Card className="group relative gap-0 overflow-hidden border-0 p-0 pt-1 shadow-xl backdrop-blur-xl transition-all">
+            <Card className="group relative gap-0 overflow-hidden border-0 p-0 pt-1 shadow-xl backdrop-blur-xl transition-all dark:bg-slate-900">
               <div className="absolute top-0 right-0 left-0 h-1 rounded-t-2xl bg-linear-to-r from-purple-500 to-indigo-500" />
               <CardHeader className="border-b bg-linear-to-r from-purple-50/80 to-indigo-50/80 p-4 backdrop-blur-xl dark:from-purple-950/30 dark:to-indigo-950/30 [.border-b]:pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg font-bold sm:gap-3 sm:text-xl">

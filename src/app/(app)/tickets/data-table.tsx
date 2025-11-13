@@ -413,7 +413,7 @@ export function DataTable<TData, TValue>({
         {/* TOOLBAR DE AÇÕES EM LOTE */}
         <div
           className={cn(
-            'animate-in slide-in-from-top-2 relative overflow-hidden rounded-xl border-2 border-dashed p-4 transition-all duration-300 sm:p-6',
+            'animate-in slide-in-from-top-2 relative overflow-hidden rounded-xl border border-dashed p-4 transition-all duration-300 sm:p-6',
             numSelected > 0
               ? 'border-blue-300 bg-linear-to-br from-blue-50 to-indigo-50 dark:border-blue-700 dark:from-blue-950/30 dark:to-indigo-950/30'
               : 'hidden',
@@ -561,13 +561,13 @@ export function DataTable<TData, TValue>({
                   <RefreshCw className="h-3.5 w-3.5 text-blue-600" />
                   Atualizar Status
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 md:flex-row">
                   <Select
                     value={statusToAction}
                     onValueChange={setStatusToAction}
                     disabled={isLoading}
                   >
-                    <SelectTrigger className="border-2 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                    <SelectTrigger className="w-full border-2 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
                       <SelectValue placeholder="Selecionar status..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -595,13 +595,13 @@ export function DataTable<TData, TValue>({
                   <UserPlus className="h-3.5 w-3.5 text-purple-600" />
                   Atribuir Técnico
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 md:flex-row">
                   <Select
                     value={technicianToAction}
                     onValueChange={setTechnicianToAction}
                     disabled={isLoading}
                   >
-                    <SelectTrigger className="border-2 transition-all focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20">
+                    <SelectTrigger className="w-full border-2 transition-all focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20">
                       <SelectValue placeholder="Selecionar técnico..." />
                     </SelectTrigger>
                     <SelectContent>

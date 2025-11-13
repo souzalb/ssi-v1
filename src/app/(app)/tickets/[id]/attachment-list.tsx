@@ -110,10 +110,10 @@ export function AttachmentList({ attachments }: AttachmentListProps) {
 
   if (!attachments || attachments.length === 0) {
     return (
-      <Card className="relative gap-0 overflow-hidden border-0 shadow-xl">
+      <Card className="relative overflow-hidden border-0 shadow-xl dark:bg-slate-900">
         <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
-        <CardHeader className="p-0">
+        <CardHeader className="pb-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-xl">
@@ -147,10 +147,10 @@ export function AttachmentList({ attachments }: AttachmentListProps) {
   }
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-xl">
+    <Card className="relative overflow-hidden border-0 shadow-xl dark:bg-slate-900">
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
-      <CardHeader className="pb-4">
+      <CardHeader className="pb-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-xl">

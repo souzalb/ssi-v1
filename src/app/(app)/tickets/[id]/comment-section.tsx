@@ -139,7 +139,7 @@ export function CommentSection({
       : comments;
 
   return (
-    <Card className="relative gap-0 overflow-hidden border-0 shadow-xl">
+    <Card className="relative gap-0 overflow-hidden border-0 shadow-xl dark:bg-slate-900">
       {/* Gradient decorativo no topo */}
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-pink-500 via-rose-500 to-orange-500" />
 

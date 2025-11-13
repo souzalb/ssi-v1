@@ -95,7 +95,7 @@ export function UserNav({ name, email, role, imageUrl }: UserNavProps) {
           {/* Link Condicional para Admin (com ícone) */}
           {role === Role.SUPER_ADMIN && (
             <DropdownMenuItem asChild>
-              <Link href="/admin/users">
+              <Link href="/admin/users" className="cursor-pointer">
                 <Settings2 className="mr-2 h-4 w-4" />
                 <span>Gerir Utilizadores</span>
               </Link>
@@ -116,9 +116,9 @@ export function UserNav({ name, email, role, imageUrl }: UserNavProps) {
         {/* Sair (com ícone) */}
         <DropdownMenuItem
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="cursor-pointer focus:bg-red-50 focus:text-red-600"
+          className="cursor-pointer focus:bg-red-50 focus:text-red-600 dark:focus:bg-red-800/50"
         >
-          <LogOut className="mr-2 h-4 w-4 focus:text-red-600" />
+          <LogOut className="mr-2 h-4 w-4 focus:text-red-600 dark:focus:text-red-700" />
           <span>Sair</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

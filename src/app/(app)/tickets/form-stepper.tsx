@@ -9,13 +9,24 @@ import {
   FileUp,
 } from 'lucide-react';
 
-// (Ajuste os ícones conforme a sua preferência)
 const steps = [
-  { name: 'Área', icon: Building },
-  { name: 'Detalhes', icon: ClipboardList },
-  { name: 'Localização', icon: MapPin },
-  { name: 'Equipamento', icon: HardDrive },
-  { name: 'Anexos', icon: FileUp },
+  { name: 'Área', icon: Building, gradient: 'from-blue-500 to-indigo-600' },
+  {
+    name: 'Detalhes',
+    icon: ClipboardList,
+    gradient: 'from-purple-500 to-pink-600',
+  },
+  {
+    name: 'Localização',
+    icon: MapPin,
+    gradient: 'from-emerald-500 to-teal-600',
+  },
+  {
+    name: 'Equipamento',
+    icon: HardDrive,
+    gradient: 'from-amber-500 to-orange-600',
+  },
+  { name: 'Anexos', icon: FileUp, gradient: 'from-indigo-500 to-purple-600' },
 ];
 
 interface FormStepperProps {
@@ -35,31 +46,72 @@ export function FormStepper({ currentStep }: FormStepperProps) {
           const isCurrent = currentStep === stepNumber;
 
           return (
-            <li key={step.name} className="flex-1">
+            <li key={step.name} className="relative flex-1">
+              {/* Barra superior com glassmorphism */}
               <div
                 className={cn(
-                  'flex flex-col items-center gap-2 border-t-4 pt-2 md:pt-4',
-                  isCompleted ? 'border-primary' : 'border-border',
-                  isCurrent && 'border-primary',
+                  'absolute top-0 right-0 left-0 h-1 rounded-full transition-all duration-500',
+                  isCompleted || isCurrent
+                    ? `bg-linear-to-r ${step.gradient} shadow-sm`
+                    : 'bg-slate-200/60 dark:bg-slate-700/60',
                 )}
-              >
-                <span
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-full',
-                    isCompleted
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground',
-                    isCurrent && 'ring-primary/20 ring-4',
+              />
+
+              <div className="flex flex-col items-center gap-2 pt-4 md:pt-5">
+                {/* Ícone com glassmorphism */}
+                <div className="relative">
+                  <span
+                    className={cn(
+                      'flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-300',
+                      isCompleted || isCurrent
+                        ? `bg-linear-to-br ${step.gradient} shadow-lg backdrop-blur-xl`
+                        : 'bg-linear-to-br from-slate-100/80 to-slate-200/80 backdrop-blur-xl dark:from-slate-800/80 dark:to-slate-700/80',
+                      isCurrent &&
+                        'scale-110 ring-4 ring-white/30 dark:ring-slate-900/30',
+                    )}
+                  >
+                    <step.icon
+                      className={cn(
+                        'h-5 w-5 transition-colors',
+                        isCompleted || isCurrent
+                          ? 'text-white drop-shadow-sm'
+                          : 'text-slate-400 dark:text-slate-500',
+                      )}
+                    />
+                  </span>
+
+                  {/* Glow effect para o item atual */}
+                  {isCurrent && (
+                    <div
+                      className={cn(
+                        'absolute -inset-1 rounded-2xl bg-linear-to-br opacity-20 blur-md',
+                        step.gradient,
+                      )}
+                    />
                   )}
-                >
-                  <step.icon className="h-5 w-5" />
-                </span>
+
+                  {/* Sombra colorida para items completados */}
+                  {isCompleted && (
+                    <div
+                      className={cn(
+                        'absolute -inset-0.5 rounded-2xl opacity-30 blur',
+                        step.gradient,
+                      )}
+                      style={{
+                        background: `linear-gradient(to bottom right, var(--tw-gradient-stops))`,
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Label */}
                 <span
                   className={cn(
-                    'text-sm font-medium',
-                    isCompleted && 'text-primary',
-                    isCurrent && 'text-primary',
-                    !isCompleted && !isCurrent && 'text-muted-foreground',
+                    'text-xs font-semibold transition-colors md:text-sm',
+                    isCompleted || isCurrent
+                      ? 'bg-linear-to-r bg-clip-text text-transparent ' +
+                          step.gradient
+                      : 'text-slate-500 dark:text-slate-400',
                   )}
                 >
                   {step.name}

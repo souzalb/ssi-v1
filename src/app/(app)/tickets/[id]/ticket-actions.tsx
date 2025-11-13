@@ -218,7 +218,7 @@ export function TicketActions({ ticket, currentUser }: TicketActionsProps) {
   const RoleIcon = roleInfo.icon;
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-xl">
+    <Card className="relative overflow-hidden border-0 shadow-xl dark:bg-slate-900">
       {/* Gradient decorativo no topo */}
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-indigo-500" />
 
