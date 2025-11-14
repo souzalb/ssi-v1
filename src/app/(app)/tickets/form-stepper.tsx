@@ -107,7 +107,7 @@ export function FormStepper({ currentStep }: FormStepperProps) {
                 {/* Label */}
                 <span
                   className={cn(
-                    'text-xs font-semibold transition-colors md:text-sm',
+                    'hidden text-xs font-semibold transition-colors md:block md:text-sm',
                     isCompleted || isCurrent
                       ? 'bg-linear-to-r bg-clip-text text-transparent ' +
                           step.gradient
