@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '@/app/_components/ui/select';
 import { Textarea } from '@/app/_components/ui/textarea';
+import { Progress } from '@/app/_components/ui/progress';
 import { Badge } from '@/app/_components/ui/badge';
 import {
   Loader2,
@@ -285,14 +286,15 @@ export default function NewTicketPage() {
       {/* Barra de Progresso Flutuante (Liquid Glass) */}
       <div
         className={cn(
-          'fixed top-4 left-1/2 z-50 -translate-x-1/2 transition-all duration-500',
+          'fixed top-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 transition-all duration-500 md:w-fit',
           showFloatingBar
             ? 'translate-y-0 opacity-100'
             : 'pointer-events-none -translate-y-20 opacity-0',
         )}
       >
-        <div className="mx-4 w-fit rounded-3xl border border-white/30 bg-white/80 p-4 shadow-2xl backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-slate-900/80">
-          <div className="flex items-center gap-6">
+        <div className="rounded-3xl border border-white/30 bg-white/80 p-3 shadow-2xl backdrop-blur-2xl backdrop-saturate-150 md:p-4 dark:border-white/10 dark:bg-slate-900/80">
+          {/* Layout Desktop */}
+          <div className="hidden items-center gap-6 md:flex">
             {/* Steps com ícones */}
             <div className="flex items-center gap-2">
               {STEP_ICONS.map((Icon, index) => {
@@ -358,6 +360,59 @@ export default function NewTicketPage() {
               <Badge className="gap-1.5 rounded-xl border-0 bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 px-3 py-1.5 text-white shadow-lg shadow-emerald-500/30 backdrop-blur-xl">
                 <Sparkles className="h-3.5 w-3.5 drop-shadow-sm" />
                 <span className="text-sm font-bold drop-shadow-sm">
+                  {Math.round(progressPercent)}%
+                </span>
+              </Badge>
+            </div>
+          </div>
+
+          {/* Layout Mobile - Compacto */}
+          <div className="flex items-center justify-between gap-3 md:hidden">
+            {/* Ícone da Etapa Atual + Número */}
+            <div className="flex items-center gap-2">
+              <div
+                className={cn(
+                  'relative flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br shadow-lg backdrop-blur-xl',
+                  STEP_GRADIENTS[currentStep - 1],
+                )}
+              >
+                {(() => {
+                  const CurrentIcon = STEP_ICONS[currentStep - 1];
+                  return (
+                    <CurrentIcon className="h-5 w-5 text-white drop-shadow-sm" />
+                  );
+                })()}
+                <div
+                  className={cn(
+                    'absolute -inset-1 rounded-xl bg-linear-to-br opacity-20 blur-md',
+                    STEP_GRADIENTS[currentStep - 1],
+                  )}
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                  Etapa {currentStep} de {TOTAL_STEPS}
+                </span>
+                <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  {
+                    ['Área', 'Detalhes', 'Local', 'Equipamento', 'Anexos'][
+                      currentStep - 1
+                    ]
+                  }
+                </span>
+              </div>
+            </div>
+
+            {/* Progresso Compacto */}
+            <div className="flex items-center gap-2">
+              <div className="relative h-2 w-20 overflow-hidden rounded-full bg-slate-200/60 backdrop-blur-xl dark:bg-slate-700/60">
+                <div
+                  className="h-full rounded-full bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 shadow-sm shadow-emerald-500/30 transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <Badge className="gap-1 rounded-lg border-0 bg-linear-to-r from-emerald-500 to-teal-600 px-2 py-1 text-white shadow-lg shadow-emerald-500/30 backdrop-blur-xl">
+                <span className="text-xs font-bold drop-shadow-sm">
                   {Math.round(progressPercent)}%
                 </span>
               </Badge>
@@ -481,11 +536,11 @@ export default function NewTicketPage() {
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-12 cursor-pointer border-2 text-base transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
-                              <SelectValue placeholder="Escolha o departamento responsável" />
+                            <SelectTrigger className="h-12 cursor-pointer truncate border-2 text-base transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                              <SelectValue placeholder="Escolha o departamento" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent className="w-full">
+                          <SelectContent>
                             {areas.map((area) => (
                               <SelectItem
                                 key={area.id}
@@ -570,7 +625,7 @@ export default function NewTicketPage() {
                         <FormDescription className="flex items-center justify-between">
                           <span>Inclua quando ocorreu e ações já tentadas</span>
                           <Badge
-                            variant="secondary"
+                            variant="outline"
                             className={cn(
                               'font-mono text-xs',
                               descriptionValue.length > 450 &&
@@ -598,7 +653,7 @@ export default function NewTicketPage() {
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-12 border-2 text-base transition-all focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20">
+                            <SelectTrigger className="h-12 cursor-pointer border-2 text-base transition-all focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20">
                               <SelectValue placeholder="Selecione a prioridade" />
                             </SelectTrigger>
                           </FormControl>
@@ -608,7 +663,7 @@ export default function NewTicketPage() {
                                 <SelectItem
                                   key={key}
                                   value={key}
-                                  className="text-base"
+                                  className="cursor-pointer text-base"
                                 >
                                   <div className="flex items-center gap-2">
                                     <div
@@ -934,12 +989,24 @@ export default function NewTicketPage() {
 
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border-2 border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                  <p className="mb-2 text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400">
+                    Título
+                  </p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {allWatchedValues.title || '-'}
+                  </p>
+                </div>
                 <SummaryItem
                   label="Área"
-                  value={
-                    areas.find((a) => a.id === allWatchedValues.areaId)?.name ||
-                    '-'
-                  }
+                  value={(() => {
+                    const selected = areas.find(
+                      (a) => a.id === allWatchedValues.areaId,
+                    );
+                    return selected
+                      ? (areaLabels[selected.name] ?? selected.name)
+                      : '-';
+                  })()}
                   icon={<Building2 className="h-4 w-4" />}
                 />
                 <SummaryItem
@@ -959,15 +1026,6 @@ export default function NewTicketPage() {
                   value={allWatchedValues.equipment || '-'}
                   icon={<Wrench className="h-4 w-4" />}
                 />
-              </div>
-
-              <div className="rounded-lg border-2 border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-                <p className="mb-2 text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-400">
-                  Título
-                </p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {allWatchedValues.title || '-'}
-                </p>
               </div>
 
               {filesToUpload.length > 0 && (
