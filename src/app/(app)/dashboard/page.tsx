@@ -521,7 +521,11 @@ export default async function DashboardPage() {
             </p>
           </div>
           <div className="flex flex-col items-center gap-2 md:items-end">
-            <Button asChild size="default" className="w-full md:w-fit">
+            <Button
+              asChild
+              size="default"
+              className="w-full bg-linear-to-r from-blue-500 to-indigo-800 text-white md:w-fit"
+            >
               <Link href="/tickets/new">
                 <TicketPlusIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">Abrir Novo Chamado</span>

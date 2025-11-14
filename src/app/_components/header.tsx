@@ -2,7 +2,13 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import Link from 'next/link';
 import { UserNav } from './user-nav';
-import { ChartLineIcon, Cog, PlusCircleIcon, TicketIcon } from 'lucide-react';
+import {
+  ChartLineIcon,
+  Cog,
+  PlusCircleIcon,
+  TicketIcon,
+  UsersIcon,
+} from 'lucide-react';
 import { ModeToggle } from './mode-toggle'; // (Assumindo que este componente existe)
 import { NavLink } from './nav-link'; // (O seu componente de link ativo)
 
@@ -16,6 +22,7 @@ export async function Header() {
 
   const { user } = session;
   const isCommonUser = user.role === 'COMMON';
+  const isSuperAdmin = user.role === 'SUPER_ADMIN';
 
   return (
     // 1. O <header> agora é sempre visível
@@ -48,6 +55,13 @@ export async function Header() {
             <TicketIcon className="h-4 w-4" />
             Chamados
           </NavLink>
+
+          {isSuperAdmin && (
+            <NavLink href="/admin/users">
+              <UsersIcon className="h-4 w-4" />
+              Usuários
+            </NavLink>
+          )}
 
           <NavLink href="/tickets/new">
             <PlusCircleIcon className="h-4 w-4" />

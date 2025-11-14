@@ -64,7 +64,7 @@ function MobileNavLink({
           />
 
           {/* Badge de notificação */}
-          {badge && badge > 0 && (
+          {badge !== undefined && badge > 0 && (
             <div className="bg-destructive animate-in zoom-in-50 absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-lg">
               {badge > 99 ? '99+' : badge}
             </div>
