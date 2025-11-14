@@ -13,7 +13,7 @@ import {
   RowSelectionState,
   getPaginationRowModel,
 } from '@tanstack/react-table';
-import { User } from '@prisma/client';
+import { Status, User } from '@prisma/client';
 
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -89,6 +89,16 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   statuses: string[];
 }
+
+const statusLabels: Record<string, string> = {
+  OPEN: 'Aberto',
+  ASSIGNED: 'Atribuído',
+  IN_PROGRESS: 'Em Andamento',
+  ON_HOLD: 'Em Espera',
+  RESOLVED: 'Resolvido',
+  CLOSED: 'Fechado',
+  CANCELLED: 'Cancelado',
+};
 
 export function DataTable<TData, TValue>({
   columns,
@@ -573,7 +583,7 @@ export function DataTable<TData, TValue>({
                     <SelectContent>
                       {statuses.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {s}
+                          {statusLabels[s] || s}
                         </SelectItem>
                       ))}
                     </SelectContent>

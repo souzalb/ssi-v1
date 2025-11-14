@@ -37,6 +37,7 @@ import {
   ChevronRight,
   Sparkles,
   Info,
+  StarIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/app/_components/ui/button';
@@ -207,9 +208,11 @@ export default async function TicketDetailPage({
   const { ticket, session } = data;
 
   const isRequester = session.user.id === ticket.requesterId;
-  const isTicketClosed =
-    ticket.status === Status.RESOLVED || ticket.status === Status.CLOSED;
-  const showRatingBox = isRequester && isTicketClosed;
+
+  // SÓ mostra a caixa se o utilizador for o solicitante E o status for 'RESOLVED'
+  const showRatingBox =
+    (isRequester && ticket.status === Status.RESOLVED) ||
+    ticket.status === Status.CLOSED;
 
   const statusConfig = STATUS_CONFIG[ticket.status];
   const priorityConfig =
@@ -294,7 +297,13 @@ export default async function TicketDetailPage({
                   </h1>
 
                   {/* Metadados em Grid */}
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div
+                    className={
+                      ticket.status === Status.CLOSED
+                        ? 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5'
+                        : 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'
+                    }
+                  >
                     <MetaItem
                       icon={<User className="h-4 w-4 sm:h-5 sm:w-5" />}
                       label="Solicitante"
@@ -323,6 +332,18 @@ export default async function TicketDetailPage({
                       value={ticket.technician?.name || 'Não atribuído'}
                       gradient="from-amber-500 to-orange-500"
                     />
+                    {ticket.status === Status.CLOSED && (
+                      <MetaItem
+                        icon={<StarIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                        label="Avaliação"
+                        value={String(
+                          ticket.satisfactionRating != null
+                            ? ticket.satisfactionRating + ' de 5'
+                            : '—',
+                        )}
+                        gradient="from-amber-500 to-yellow-500"
+                      />
+                    )}
                   </div>
                 </div>
               </CardHeader>

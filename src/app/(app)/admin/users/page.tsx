@@ -480,7 +480,7 @@ export default function UserManagementPage() {
             <div className="overflow-x-auto rounded-lg border p-2">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-slate-900">
+                  <TableRow className="dark:hover:bg-slate-900">
                     <TableHead className="font-bold">Nome</TableHead>
                     <TableHead className="font-bold">Email</TableHead>
                     <TableHead className="font-bold">Nível</TableHead>

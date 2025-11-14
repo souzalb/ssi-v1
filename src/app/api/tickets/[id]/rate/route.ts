@@ -4,6 +4,7 @@ import { Status } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import db from '@/app/_lib/prisma';
+import { revalidatePath } from 'next/cache';
 
 // 1. Schema de Validação
 // A nota deve ser um número inteiro entre 1 e 5
@@ -61,15 +62,15 @@ export async function POST(
     // REGRA 1: Apenas o solicitante pode avaliar
     if (ticket.requesterId !== userId) {
       return NextResponse.json(
-        { error: 'Apenas o solicitante pode avaliar este chamado' },
+        { error: 'Apenas o solicitante pode avaliar este chamado.' },
         { status: 403 }, // Forbidden
       );
     }
 
     // REGRA 2: Apenas chamados concluídos podem ser avaliados
-    if (ticket.status !== Status.RESOLVED && ticket.status !== Status.CLOSED) {
+    if (ticket.status !== Status.RESOLVED) {
       return NextResponse.json(
-        { error: 'Apenas chamados resolvidos ou fechados podem ser avaliados' },
+        { error: 'Apenas chamados resolvidos podem ser fechados.' },
         { status: 403 },
       );
     }
@@ -79,10 +80,12 @@ export async function POST(
       where: { id: ticketId },
       data: {
         satisfactionRating: rating,
+        status: Status.CLOSED,
       },
     });
 
     return NextResponse.json(updatedTicket);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('[API_TICKET_RATE_POST_ERROR]', error);

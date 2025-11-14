@@ -14,6 +14,7 @@ import {
 import { Button } from '@/app/_components/ui/button';
 import { Badge } from '@/app/_components/ui/badge';
 import { cn } from '@/app/_lib/utils';
+import { useRouter } from 'next/navigation';
 
 interface TicketRatingProps {
   ticketId: string;
@@ -46,6 +47,8 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const router = useRouter();
+
   const handleRatingSubmit = async (rating: number) => {
     if (rating === selectedRating) return;
 
@@ -68,6 +71,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
         description: `${config.emoji} ${config.label} - Obrigado pelo seu feedback!`,
       });
       setSelectedRating(rating);
+      router.refresh();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error('Erro ao enviar avaliação', { description: error.message });

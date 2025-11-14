@@ -52,6 +52,13 @@ export async function POST(req: Request) {
 
     const { ticketIds, status, technicianId } = validation.data;
 
+    if (status === Status.CLOSED) {
+      return NextResponse.json(
+        { error: 'Apenas o solicitante pode fechar chamados.' },
+        { status: 403 },
+      );
+    }
+
     // --- 2.4. CONSTRUÇÃO DA QUERY SEGURA (RBAC) ---
     // Este 'where' será usado para filtrar os IDs que o utilizador
     // tem permissão para alterar.
@@ -86,7 +93,7 @@ export async function POST(req: Request) {
       // Se o status também foi enviado, adiciona-o
       if (status !== undefined) {
         dataForUpdate.status = status;
-        if (status === Status.RESOLVED || status === Status.CLOSED) {
+        if (status === Status.RESOLVED) {
           // (Limitação: Não conseguimos verificar o 'resolvedAt' antigo
           // de forma eficiente numa transação em lote)
           dataForUpdate.resolvedAt = new Date();
@@ -129,7 +136,7 @@ export async function POST(req: Request) {
         status: status,
       };
 
-      if (status === Status.RESOLVED || status === Status.CLOSED) {
+      if (status === Status.RESOLVED) {
         // ATENÇÃO: Esta ação vai SOBRESCREVER o 'resolvedAt'
         // de chamados que talvez já estivessem resolvidos.
         // É uma limitação do 'updateMany'.

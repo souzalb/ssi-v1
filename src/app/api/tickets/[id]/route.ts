@@ -77,6 +77,15 @@ export async function PATCH(
 
     const { status, technicianId } = validation.data;
 
+    if (status === Status.CLOSED) {
+      return NextResponse.json(
+        {
+          error: 'Apenas o solicitante pode marcar um chamado como "Fechado".',
+        },
+        { status: 403 }, // Forbidden
+      );
+    }
+
     // 2.6. Autorização Específica (sem alteração)
     if (technicianId !== undefined && role === Role.TECHNICIAN) {
       return NextResponse.json(
@@ -93,10 +102,7 @@ export async function PATCH(
       // --- INÍCIO DA NOVA LÓGICA ---
       // Se o status novo for RESOLVED ou CLOSED,
       // E o chamado AINDA NÃO tiver uma data de resolução (resolvedAt é null)
-      if (
-        (status === Status.RESOLVED || status === Status.CLOSED) &&
-        ticket.resolvedAt === null
-      ) {
+      if (status === Status.RESOLVED && ticket.resolvedAt === null) {
         // "Trava" a data de resolução
         dataToUpdate.resolvedAt = new Date();
       }
