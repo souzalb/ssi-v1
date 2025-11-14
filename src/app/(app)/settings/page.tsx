@@ -38,23 +38,27 @@ export default async function SettingsPage() {
   const user = await getUserData();
 
   return (
-    <div className="container mx-auto max-w-4xl p-8">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground">
-          Gerencie as configurações da sua conta.
-        </p>
-      </header>
+    <div className="dark:bg-slate-950">
+      <div className="container mx-auto max-w-4xl p-6 pt-4 md:p-8 dark:bg-slate-950">
+        <header className="mb-6">
+          <h1 className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent md:text-3xl dark:from-white dark:to-slate-300">
+            Configurações
+          </h1>
+          <p className="text-sm text-slate-600 md:text-base dark:text-slate-400">
+            Gerencie as configurações da sua conta.
+          </p>
+        </header>
 
-      <div className="space-y-8">
-        <AvatarForm user={user} />
+        <div className="space-y-8">
+          <AvatarForm user={user} />
 
-        {/* 4. Renderiza o formulário de perfil (Client Component) */}
-        {/* Passa os dados do servidor como props */}
-        <ProfileForm user={user} />
+          {/* 4. Renderiza o formulário de perfil (Client Component) */}
+          {/* Passa os dados do servidor como props */}
+          <ProfileForm user={user} />
 
-        {/* 5. Renderiza o formulário de senha (Client Component) */}
-        <PasswordForm />
+          {/* 5. Renderiza o formulário de senha (Client Component) */}
+          <PasswordForm />
+        </div>
       </div>
     </div>
   );

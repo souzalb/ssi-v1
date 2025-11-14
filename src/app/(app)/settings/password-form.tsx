@@ -139,27 +139,33 @@ export function PasswordForm() {
   }
 
   return (
-    <Card className="group relative overflow-hidden border-2 shadow-xl transition-all hover:shadow-2xl">
+    <Card className="group relative overflow-hidden border-2 p-0 shadow-xl transition-all hover:shadow-2xl dark:bg-slate-900">
       {/* Gradient decorativo */}
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500" />
 
-      <CardHeader className="border-b bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20">
+      <CardHeader className="border-b bg-linear-to-r from-emerald-50 to-teal-50 p-4 dark:from-emerald-950/20 dark:to-teal-950/20 [.border-b]:pb-2">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 p-2.5 shadow-lg">
             <Shield className="h-6 w-6 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Segurança</CardTitle>
-            <CardDescription className="text-sm">
+            <CardTitle className="text-xl font-bold md:text-2xl">
+              Segurança
+            </CardTitle>
+            <CardDescription className="text-xs md:text-sm">
               Mantenha sua conta segura alterando sua senha regularmente
             </CardDescription>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-6">
+      <CardContent className="p-6 pt-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-6"
+            autoComplete="off"
+          >
             {/* Senha Atual */}
             <FormField
               control={form.control}
@@ -196,7 +202,7 @@ export function PasswordForm() {
                       </button>
                     </div>
                   </FormControl>
-                  <FormDescription className="text-sm">
+                  <FormDescription className="text-xs md:text-sm">
                     Confirme sua identidade com a senha atual.
                   </FormDescription>
                   <FormMessage />
@@ -263,7 +269,7 @@ export function PasswordForm() {
                     </div>
                   )}
 
-                  <FormDescription className="text-sm">
+                  <FormDescription className="text-xs md:text-sm">
                     Crie uma senha forte e única.
                   </FormDescription>
                   <FormMessage />
@@ -331,7 +337,7 @@ export function PasswordForm() {
                       </button>
                     </div>
                   </FormControl>
-                  <FormDescription className="text-sm">
+                  <FormDescription className="text-xs md:text-sm">
                     Digite a mesma senha para confirmar.
                   </FormDescription>
                   <FormMessage />
@@ -349,7 +355,7 @@ export function PasswordForm() {
                   <p className="font-semibold text-slate-900 dark:text-slate-100">
                     Dicas de segurança
                   </p>
-                  <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                  <ul className="mt-2 space-y-1 text-xs text-slate-600 md:text-sm dark:text-slate-400">
                     <li>• Use uma combinação de letras, números e símbolos</li>
                     <li>• Evite informações pessoais óbvias</li>
                     <li>• Não reutilize senhas de outras contas</li>
@@ -365,7 +371,6 @@ export function PasswordForm() {
                 type="submit"
                 disabled={isLoading || !hasChanges || !hasAllRequirements}
                 className="flex-1 gap-2 bg-linear-to-r from-emerald-500 to-teal-600 font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50"
-                size="lg"
               >
                 {isLoading ? (
                   <>

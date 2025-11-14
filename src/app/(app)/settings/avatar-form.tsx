@@ -154,32 +154,34 @@ export function AvatarForm({ user }: AvatarFormProps) {
   const previewUrl = file ? URL.createObjectURL(file) : user.photoUrl || '';
 
   return (
-    <Card className="group relative overflow-hidden border-2 shadow-xl transition-all hover:shadow-2xl">
+    <Card className="group relative overflow-hidden border-2 p-0 shadow-xl transition-all hover:shadow-2xl dark:bg-slate-900">
       {/* Gradient decorativo */}
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-pink-500" />
 
-      <CardHeader className="border-b bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+      <CardHeader className="border-b bg-linear-to-r from-blue-50 to-purple-50 p-4 dark:from-blue-950/20 dark:to-purple-950/20 [.border-b]:pb-2">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-linear-to-br from-blue-500 to-purple-600 p-2.5 shadow-lg">
             <Camera className="h-6 w-6 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Foto de Perfil</CardTitle>
-            <CardDescription className="text-sm">
+            <CardTitle className="text-xl font-bold md:text-2xl">
+              Foto de Perfil
+            </CardTitle>
+            <CardDescription className="text-xs md:text-sm">
               Personalize seu avatar para ser reconhecido facilmente
             </CardDescription>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <CardContent className="p-6 pt-0">
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           {/* Avatar Preview */}
           <div className="flex flex-col items-center gap-6 sm:flex-row">
             {/* Avatar Grande com Overlay */}
             <div className="relative">
               <div className="relative">
-                <Avatar className="h-32 w-32 border-4 border-white shadow-2xl ring-4 ring-slate-100 dark:border-slate-800 dark:ring-slate-800">
+                <Avatar className="h-24 w-24 border-4 border-white shadow-2xl ring-4 ring-slate-100 md:h-32 md:w-32 dark:border-slate-800 dark:ring-slate-800">
                   <AvatarImage src={previewUrl} className="object-cover" />
                   <AvatarFallback className="bg-linear-to-br from-blue-500 to-purple-600 text-3xl font-bold text-white">
                     {initials}
@@ -289,7 +291,7 @@ export function AvatarForm({ user }: AvatarFormProps) {
           </div>
 
           {/* Dicas e Recomendações */}
-          <div className="rounded-xl border-2 border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-950/20">
+          <div className="hidden rounded-xl border-2 border-purple-200 bg-purple-50 p-4 md:block dark:border-purple-800 dark:bg-purple-950/20">
             <div className="flex items-start gap-3">
               <div className="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
                 <AlertCircle className="h-5 w-5 text-purple-600 dark:text-purple-400" />
@@ -298,7 +300,7 @@ export function AvatarForm({ user }: AvatarFormProps) {
                 <p className="font-semibold text-slate-900 dark:text-slate-100">
                   Dicas para uma boa foto de perfil
                 </p>
-                <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                <ul className="mt-2 space-y-1 text-xs text-slate-600 md:text-sm dark:text-slate-400">
                   <li>• Use uma foto recente e nítida</li>
                   <li>• Prefira imagens com fundo neutro</li>
                   <li>• Centralize seu rosto na foto</li>
@@ -314,7 +316,6 @@ export function AvatarForm({ user }: AvatarFormProps) {
               type="submit"
               disabled={isLoading || !file}
               className="flex-1 gap-2 bg-linear-to-r from-blue-500 to-purple-600 font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50"
-              size="lg"
             >
               {isLoading ? (
                 <>

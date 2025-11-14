@@ -268,6 +268,7 @@ export function TicketActions({ ticket, currentUser }: TicketActionsProps) {
                   handleUpdate({ technicianId: v.technicianId }),
                 )}
                 className="space-y-3"
+                autoComplete="off"
               >
                 <FormField
                   control={assignForm.control}

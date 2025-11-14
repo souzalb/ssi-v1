@@ -87,29 +87,33 @@ export function ProfileForm({ user }: ProfileFormProps) {
   }
 
   return (
-    <Card className="group relative overflow-hidden border-2 shadow-xl transition-all hover:shadow-2xl">
+    <Card className="group relative overflow-hidden border-2 p-0 shadow-xl transition-all hover:shadow-2xl dark:bg-slate-900">
       {/* Gradient decorativo */}
       <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-blue-500 via-purple-500 to-pink-500" />
 
-      <CardHeader className="border-b bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20">
+      <CardHeader className="border-b bg-linear-to-r from-blue-50 to-purple-50 p-4 dark:from-blue-950/20 dark:to-purple-950/20 [.border-b]:pb-2">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-linear-to-br from-blue-500 to-purple-600 p-2.5 shadow-lg">
             <UserCircle className="h-6 w-6 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">
+            <CardTitle className="text-xl font-bold md:text-2xl">
               Informações do Perfil
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-xs md:text-sm">
               Personalize seu nome de exibição no sistema
             </CardDescription>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-6">
+      <CardContent className="p-6 pt-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-6"
+            autoComplete="off"
+          >
             {/* Campo Nome */}
             <FormField
               control={form.control}
@@ -132,7 +136,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                       />
                     </div>
                   </FormControl>
-                  <FormDescription className="text-sm">
+                  <FormDescription className="text-xs md:text-sm">
                     Este nome será exibido em todo o sistema.
                   </FormDescription>
                   <FormMessage />
@@ -160,7 +164,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                   </div>
                 </div>
               </FormControl>
-              <FormDescription className="flex items-center gap-1.5 text-sm">
+              <FormDescription className="flex items-center gap-1.5 text-xs md:text-sm">
                 <AlertCircle className="h-3.5 w-3.5" />O email não pode ser
                 alterado por questões de segurança.
               </FormDescription>
@@ -176,7 +180,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                   <p className="font-semibold text-slate-900 dark:text-slate-100">
                     Sobre suas informações
                   </p>
-                  <ul className="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-400">
+                  <ul className="mt-2 space-y-1 text-xs text-slate-600 md:text-sm dark:text-slate-400">
                     <li>• Seu nome será visível para outros usuários</li>
                     <li>• O email é usado apenas para login e notificações</li>
                     <li>
@@ -194,7 +198,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 type="submit"
                 disabled={isLoading || !hasChanges}
                 className="flex-1 gap-2 bg-linear-to-r from-blue-500 to-purple-600 font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50"
-                size="lg"
               >
                 {isLoading ? (
                   <>

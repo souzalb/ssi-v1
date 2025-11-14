@@ -116,7 +116,11 @@ export function CreateUserForm({ onSuccess }: CreateUserFormProps) {
   // 8. O JSX
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-4"
+        autoComplete="off"
+      >
         <FormField
           control={form.control}
           name="name"
@@ -161,7 +165,7 @@ export function CreateUserForm({ onSuccess }: CreateUserFormProps) {
           )}
         />
 
-        <div className="flex w-full gap-2">
+        <div className="flex w-full flex-col gap-2 space-y-4 md:flex-row md:space-y-0">
           {/* --- Campo de Role --- */}
           <FormField
             control={form.control}

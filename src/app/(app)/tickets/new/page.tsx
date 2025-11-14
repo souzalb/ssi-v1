@@ -502,6 +502,7 @@ export default function NewTicketPage() {
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-8"
+                autoComplete="off"
               >
                 {/* ETAPA 1: ÁREA */}
                 <div

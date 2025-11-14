@@ -311,7 +311,10 @@ export function TicketFilters({
               <Filter className="h-4 w-4" />
               <span className="font-semibold">Filtros Avançados</span>
               {activeFiltersCount > 0 && (
-                <Badge variant="secondary" className="ml-1 rounded-full px-2">
+                <Badge
+                  variant="outline"
+                  className="ml-1 rounded-full bg-blue-600 px-2 text-white"
+                >
                   {activeFiltersCount}
                 </Badge>
               )}
