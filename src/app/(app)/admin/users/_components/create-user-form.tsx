@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Role } from '@prisma/client';
+import { AreaName, Role } from '@prisma/client';
 import { toast } from 'sonner';
 import {
   Form,
@@ -27,7 +27,13 @@ import {
 // --- Tipos ---
 type Area = {
   id: string;
-  name: string;
+  name: AreaName;
+};
+
+const areaLabels: Record<AreaName, string> = {
+  TI: 'T.I.',
+  BUILDING: 'Predial',
+  ELECTRICAL: 'Elétrica',
 };
 
 // 1. Schema de Validação (deve bater com o da API)
@@ -155,58 +161,72 @@ export function CreateUserForm({ onSuccess }: CreateUserFormProps) {
           )}
         />
 
-        {/* --- Campo de Role --- */}
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nível de Acesso (Role)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o nível" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value={Role.COMMON}>Usuário Comum</SelectItem>
-                  <SelectItem value={Role.TECHNICIAN}>Técnico</SelectItem>
-                  <SelectItem value={Role.MANAGER}>Gestor</SelectItem>
-                  <SelectItem value={Role.SUPER_ADMIN}>Super Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* --- Campo de Área --- */}
-        <FormField
-          control={form.control}
-          name="areaId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Área (Opcional)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a área (se aplicável)" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {areas.map((area) => (
-                    <SelectItem key={area.id} value={area.id}>
-                      {area.name}
+        <div className="flex w-full gap-2">
+          {/* --- Campo de Role --- */}
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Nível de Acesso (Role)</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o nível" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={Role.COMMON}>Usuário Comum</SelectItem>
+                    <SelectItem value={Role.TECHNICIAN}>Técnico</SelectItem>
+                    <SelectItem value={Role.MANAGER}>Gestor</SelectItem>
+                    <SelectItem value={Role.SUPER_ADMIN}>
+                      Super Admin
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+          {/* --- Campo de Área --- */}
+          <FormField
+            control={form.control}
+            name="areaId"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Área (Opcional)</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione a área (se aplicável)" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {areas.map((area) => (
+                      <SelectItem key={area.id} value={area.id}>
+                        {areaLabels[area.name] || area.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full bg-linear-to-r from-green-500 to-green-700 shadow-lg backdrop-blur-xl transition-all hover:shadow-xl"
+          disabled={isLoading}
+        >
           {isLoading ? 'Salvando...' : 'Salvar Usuário'}
         </Button>
       </form>

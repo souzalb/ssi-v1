@@ -116,10 +116,6 @@ export function EditUserForm({ user, onSuccess }: EditUserFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* (Campos de Nome, Email, Role, Area - IDÊNTICOS ao create-form) */}
-        {/* ... (copie os FormFields de 'name', 'email', 'role' e 'areaId' do create-user-form.tsx) ... */}
-        {/* IMPORTANTE: NÃO INCLUIR O CAMPO DE SENHA AQUI */}
-
         <FormField
           control={form.control}
           name="name"
@@ -146,61 +142,73 @@ export function EditUserForm({ user, onSuccess }: EditUserFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nível de Acesso (Role)</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value={Role.COMMON}>Usuário Comum</SelectItem>
-                  <SelectItem value={Role.TECHNICIAN}>Técnico</SelectItem>
-                  <SelectItem value={Role.MANAGER}>Gestor</SelectItem>
-                  <SelectItem value={Role.SUPER_ADMIN}>Super Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="areaId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Área (Opcional)</FormLabel>
-              <Select
-                onValueChange={(value) =>
-                  field.onChange(value === 'none' ? null : value)
-                }
-                defaultValue={field.value || 'none'}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a área" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="none">Nenhuma Área</SelectItem>
-                  {areas.map((area) => (
-                    <SelectItem key={area.id} value={area.id}>
-                      {area.name}
+        <div className="flex w-full gap-2">
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Nível de Acesso (Role)</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={Role.COMMON}>Usuário Comum</SelectItem>
+                    <SelectItem value={Role.TECHNICIAN}>Técnico</SelectItem>
+                    <SelectItem value={Role.MANAGER}>Gestor</SelectItem>
+                    <SelectItem value={Role.SUPER_ADMIN}>
+                      Super Admin
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
+          <FormField
+            control={form.control}
+            name="areaId"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Área (Opcional)</FormLabel>
+                <Select
+                  onValueChange={(value) =>
+                    field.onChange(value === 'none' ? null : value)
+                  }
+                  defaultValue={field.value || 'none'}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione a área" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma Área</SelectItem>
+                    {areas.map((area) => (
+                      <SelectItem key={area.id} value={area.id}>
+                        {area.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full bg-linear-to-r from-green-500 to-green-700 shadow-lg backdrop-blur-xl transition-all hover:shadow-xl"
+          disabled={isLoading}
+        >
           {isLoading ? 'Salvando...' : 'Salvar Alterações'}
         </Button>
       </form>

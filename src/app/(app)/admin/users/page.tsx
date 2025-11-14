@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Role } from '@prisma/client';
+import { AreaName, Role } from '@prisma/client';
 import { toast } from 'sonner';
 import {
   MoreHorizontal,
@@ -80,7 +80,7 @@ type UserWithArea = {
   role: Role;
   area: {
     id: string;
-    name: string;
+    name: AreaName;
   } | null;
   createdAt: string;
   areaId?: string | null;
@@ -89,7 +89,7 @@ type UserWithArea = {
 // Tipo da Área
 type Area = {
   id: string;
-  name: string;
+  name: AreaName;
 };
 
 // Configuração de Roles
@@ -122,6 +122,20 @@ const ROLE_CONFIG = {
     borderColor: 'border-slate-200/60 dark:border-slate-700/60',
     icon: UserCircle,
   },
+};
+
+const areaLabels: Record<AreaName, string> = {
+  TI: 'TI',
+  BUILDING: 'Predial',
+  ELECTRICAL: 'Elétrica',
+};
+
+const areaColors: Record<AreaName, string> = {
+  TI: 'bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800',
+  BUILDING:
+    'bg-lime-100 text-lime-800 border-lime-200 dark:bg-lime-950 dark:text-lime-300 dark:border-lime-800',
+  ELECTRICAL:
+    'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
 };
 
 export default function UserManagementPage() {
@@ -249,7 +263,7 @@ export default function UserManagementPage() {
     searchTerm !== '' || roleFilter !== 'all' || areaFilter !== 'all';
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-50 p-4 md:p-8 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen p-4 md:p-8 dark:bg-slate-950">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -263,25 +277,27 @@ export default function UserManagementPage() {
                 Usuários
               </span>
             </div>
-            <h1 className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-4xl font-black text-transparent dark:from-white dark:to-slate-300">
-              Gerenciamento de Usuários
-            </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Gerencie usuários, permissões e acessos do sistema
-            </p>
+            <div>
+              <h1 className="bg-linear-to-r from-slate-900 to-slate-700 bg-clip-text text-2xl font-bold text-transparent md:text-3xl dark:from-white dark:to-slate-300">
+                Gerenciamento de Usuários
+              </h1>
+              <p className="text-sm text-slate-600 md:text-base dark:text-slate-400">
+                Gerencie usuários, permissões e acessos do sistema.
+              </p>
+            </div>
           </div>
 
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
               <Button
                 size="lg"
-                className="gap-2 rounded-xl bg-linear-to-r from-blue-500 to-indigo-600 font-bold shadow-lg backdrop-blur-xl transition-all hover:shadow-xl"
+                className="gap-2 rounded-lg bg-linear-to-r from-blue-500 to-indigo-600 font-bold shadow-lg backdrop-blur-xl transition-all hover:shadow-xl"
               >
                 <UserPlus className="h-5 w-5" />
                 Novo Usuário
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] dark:bg-slate-900">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-2xl">
                   <UserPlus className="h-6 w-6" />
@@ -325,116 +341,124 @@ export default function UserManagementPage() {
         </div>
 
         {/* Filtros e Busca */}
-        <Card className="border-0 shadow-xl backdrop-blur-xl">
-          <CardContent className="p-6">
-            <div className="space-y-4">
-              <div className="flex flex-col gap-4 lg:flex-row">
-                <div className="relative flex-1">
-                  <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    placeholder="Buscar por nome ou email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-12 rounded-xl border-2 pl-10 text-base backdrop-blur-xl"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <Select value={roleFilter} onValueChange={setRoleFilter}>
-                    <SelectTrigger className="h-12 w-full rounded-xl border-2 text-base backdrop-blur-xl lg:w-48">
-                      <Filter className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Filtrar por nível" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os níveis</SelectItem>
-                      {Object.entries(ROLE_CONFIG).map(([key, config]) => (
-                        <SelectItem key={key} value={key}>
-                          <div className="flex items-center gap-2">
-                            <config.icon className="h-4 w-4" />
-                            {config.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={areaFilter} onValueChange={setAreaFilter}>
-                    <SelectTrigger className="h-12 w-full rounded-xl border-2 text-base backdrop-blur-xl lg:w-48">
-                      <Building2 className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Filtrar por área" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as áreas</SelectItem>
-                      <SelectItem value="none">
+        <Card className="border-0 p-0 shadow-xl backdrop-blur-xl dark:bg-slate-900">
+          <CardContent className="flex flex-col space-y-4 p-4">
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
+              <div className="relative md:col-span-8">
+                <Search className="absolute top-1/2 left-2 z-10 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Buscar por nome ou email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 rounded-lg border-2 pl-10 text-base backdrop-blur-xl"
+                />
+              </div>
+              <div className="flex flex-col items-center gap-2 md:flex-row lg:col-span-4">
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="h-12 w-full rounded-lg border-2 text-base backdrop-blur-xl">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Filtrar por nível" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os níveis</SelectItem>
+                    {Object.entries(ROLE_CONFIG).map(([key, config]) => (
+                      <SelectItem key={key} value={key}>
                         <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-slate-400" />
-                          Sem área
+                          <config.icon className="h-4 w-4" />
+                          {config.label}
                         </div>
                       </SelectItem>
-                      {areas.map((area) => (
-                        <SelectItem key={area.id} value={area.id}>
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            {area.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Badge de filtros ativos */}
-              {hasActiveFilters && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                    Filtros ativos:
-                  </span>
-                  {searchTerm && (
-                    <Badge
-                      variant="secondary"
-                      className="gap-1 rounded-lg backdrop-blur-xl"
-                    >
-                      Busca: {searchTerm}
-                    </Badge>
-                  )}
-                  {roleFilter !== 'all' && (
-                    <Badge
-                      variant="secondary"
-                      className="gap-1 rounded-lg backdrop-blur-xl"
-                    >
-                      Nível: {ROLE_CONFIG[roleFilter as Role]?.label}
-                    </Badge>
-                  )}
-                  {areaFilter !== 'all' && (
-                    <Badge
-                      variant="secondary"
-                      className="gap-1 rounded-lg backdrop-blur-xl"
-                    >
-                      Área:{' '}
-                      {areaFilter === 'none'
-                        ? 'Sem área'
-                        : areas.find((a) => a.id === areaFilter)?.name}
-                    </Badge>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="h-7 rounded-lg text-xs"
-                  >
-                    Limpar filtros
-                  </Button>
-                </div>
-              )}
+                <Select value={areaFilter} onValueChange={setAreaFilter}>
+                  <SelectTrigger className="h-12 w-full rounded-lg border-2 text-base backdrop-blur-xl">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Filtrar por área" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as áreas</SelectItem>
+                    <SelectItem value="none">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-slate-400" />
+                        Sem área
+                      </div>
+                    </SelectItem>
+                    {areas.map((area) => (
+                      <SelectItem key={area.id} value={area.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-blue-500" />
+                          {areaLabels[area.name] || area.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            {/* Badge de filtros ativos */}
+            {hasActiveFilters && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  Filtros ativos:
+                </span>
+                {searchTerm && (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 rounded-lg backdrop-blur-xl"
+                  >
+                    Busca: {searchTerm}
+                  </Badge>
+                )}
+                {roleFilter !== 'all' && (
+                  <Badge
+                    variant="secondary"
+                    className={`gap-1 rounded-lg backdrop-blur-xl ${ROLE_CONFIG[roleFilter as Role]?.bgColor} ${ROLE_CONFIG[roleFilter as Role]?.color}`}
+                  >
+                    Nível: {ROLE_CONFIG[roleFilter as Role]?.label}
+                  </Badge>
+                )}
+                {areaFilter !== 'all' && (
+                  <Badge
+                    variant="secondary"
+                    className={`gap-1 rounded-lg backdrop-blur-xl ${
+                      areaFilter === 'none'
+                        ? 'border-slate-200 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                        : areaColors[
+                            areas.find((a) => a.id === areaFilter)
+                              ?.name as AreaName
+                          ] || 'bg-slate-100 text-slate-800'
+                    }`}
+                  >
+                    Área:{' '}
+                    {areaFilter === 'none'
+                      ? 'Sem área'
+                      : areaLabels[
+                          areas.find((a) => a.id === areaFilter)
+                            ?.name as AreaName
+                        ] || 'N/A'}
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-7 rounded-lg text-xs"
+                >
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Tabela de Usuários */}
-        <Card className="relative overflow-hidden border-0 shadow-2xl backdrop-blur-xl">
+        <Card className="relative gap-0 overflow-hidden border-0 p-0 pt-1 shadow-2xl backdrop-blur-xl">
           <div className="absolute top-0 right-0 left-0 h-1 rounded-t-2xl bg-linear-to-r from-blue-500 via-purple-500 to-pink-500" />
 
-          <CardHeader className="border-b bg-linear-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-xl dark:from-blue-950/30 dark:to-indigo-950/30">
+          <CardHeader className="border-b bg-linear-to-r from-blue-50/80 to-indigo-50/80 p-6 backdrop-blur-xl dark:from-blue-950/30 dark:to-indigo-950/30 [.border-b]:pb-4">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 p-2.5 shadow-lg backdrop-blur-xl">
                 <Users className="h-6 w-6 text-white drop-shadow-sm" />
@@ -452,11 +476,11 @@ export default function UserManagementPage() {
             </div>
           </CardHeader>
 
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
+          <CardContent className="p-4 dark:bg-slate-900">
+            <div className="overflow-x-auto rounded-lg border p-2">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/80 backdrop-blur-xl hover:bg-slate-50/80 dark:bg-slate-900/50 dark:hover:bg-slate-900/50">
+                  <TableRow className="hover:bg-slate-900">
                     <TableHead className="font-bold">Nome</TableHead>
                     <TableHead className="font-bold">Email</TableHead>
                     <TableHead className="font-bold">Nível</TableHead>
@@ -543,7 +567,7 @@ export default function UserManagementPage() {
                               <div className="flex items-center gap-2 text-sm">
                                 <Building2 className="h-4 w-4 text-slate-400" />
                                 <span className="font-medium text-slate-900 dark:text-slate-100">
-                                  {user.area.name}
+                                  {areaLabels[user.area.name] || user.area.name}
                                 </span>
                               </div>
                             ) : (
@@ -558,7 +582,7 @@ export default function UserManagementPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-9 w-9 rounded-xl opacity-0 transition-opacity group-hover:opacity-100"
+                                  className="h-9 w-9 rounded-xl transition-opacity"
                                 >
                                   <span className="sr-only">Abrir menu</span>
                                   <MoreHorizontal className="h-5 w-5" />
@@ -575,14 +599,14 @@ export default function UserManagementPage() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => openEditModal(user)}
-                                  className="gap-2"
+                                  className="cursor-pointer gap-2"
                                 >
                                   <Edit className="h-4 w-4" />
                                   Editar usuário
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="gap-2 text-red-600 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/30"
+                                  className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/30"
                                   onClick={() => openDeleteAlert(user)}
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -635,14 +659,14 @@ export default function UserManagementPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl border-2">
+            <AlertDialogCancel className="rounded-lg border-2">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteUser}
               className={cn(
                 buttonVariants({ variant: 'destructive' }),
-                'gap-2 rounded-xl font-bold',
+                'gap-2 rounded-lg font-bold',
               )}
             >
               <Trash2 className="h-4 w-4" />

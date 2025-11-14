@@ -34,7 +34,6 @@ import {
   SelectValue,
 } from '@/app/_components/ui/select';
 import { Textarea } from '@/app/_components/ui/textarea';
-import { Progress } from '@/app/_components/ui/progress';
 import { Badge } from '@/app/_components/ui/badge';
 import {
   Loader2,
@@ -104,27 +103,27 @@ const PRIORITY_CONFIG = {
   [Priority.LOW]: {
     label: 'Baixa',
     color: 'text-slate-700 dark:text-slate-400',
-    bgColor: 'bg-slate-100 dark:bg-slate-800',
+    bgColor: 'bg-slate-100 dark:bg-slate-500',
   },
   [Priority.MEDIUM]: {
     label: 'Média',
     color: 'text-amber-700 dark:text-amber-400',
-    bgColor: 'bg-amber-100 dark:bg-amber-950/30',
+    bgColor: 'bg-amber-100 dark:bg-amber-500',
   },
   [Priority.HIGH]: {
     label: 'Alta',
     color: 'text-orange-700 dark:text-orange-400',
-    bgColor: 'bg-orange-100 dark:bg-orange-950/30',
+    bgColor: 'bg-orange-100 dark:bg-orange-500',
   },
   [Priority.URGENT]: {
     label: 'Urgente',
     color: 'text-red-700 dark:text-red-400',
-    bgColor: 'bg-red-100 dark:bg-red-950/30',
+    bgColor: 'bg-red-100 dark:bg-red-500',
   },
 };
 
 const areaLabels: Record<AreaName, string> = {
-  TI: 'T.I.',
+  TI: 'TI',
   BUILDING: 'Predial',
   ELECTRICAL: 'Elétrica',
 };
@@ -286,7 +285,7 @@ export default function NewTicketPage() {
       {/* Barra de Progresso Flutuante (Liquid Glass) */}
       <div
         className={cn(
-          'fixed top-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 transition-all duration-500 md:w-fit',
+          'fixed top-18 left-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl -translate-x-1/2 transition-all duration-500 md:w-fit',
           showFloatingBar
             ? 'translate-y-0 opacity-100'
             : 'pointer-events-none -translate-y-20 opacity-0',
@@ -622,8 +621,7 @@ export default function NewTicketPage() {
                             {...field}
                           />
                         </FormControl>
-                        <FormDescription className="flex items-center justify-between">
-                          <span>Inclua quando ocorreu e ações já tentadas</span>
+                        <FormDescription className="flex items-center justify-end">
                           <Badge
                             variant="outline"
                             className={cn(
@@ -863,7 +861,10 @@ export default function NewTicketPage() {
                         <p className="text-sm font-semibold text-slate-900 dark:text-white">
                           Arquivos Selecionados
                         </p>
-                        <Badge variant="secondary" className="gap-1">
+                        <Badge
+                          variant="outline"
+                          className="gap-1 bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400"
+                        >
                           <Sparkles className="h-3 w-3" />
                           {filesToUpload.length}
                         </Badge>
