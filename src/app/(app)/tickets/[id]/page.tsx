@@ -349,7 +349,7 @@ export default async function TicketDetailPage({
 
           {/* Ações */}
           {session.user.role != 'COMMON' ? (
-            <div className="lg:col-span-4">
+            <div className="h-full lg:col-span-4">
               <TicketActions ticket={ticket} currentUser={session.user} />
             </div>
           ) : (
