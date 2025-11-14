@@ -85,13 +85,13 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
   return (
     <Card className="relative overflow-hidden border-0 shadow-xl">
       {/* Gradient decorativo no topo */}
-      <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500" />
+      <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-yellow-400 via-amber-500 to-orange-500" />
 
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="flex items-center gap-2 text-xl">
-              <div className="rounded-lg bg-gradient-to-br from-yellow-400 to-amber-600 p-2 shadow-lg">
+              <div className="rounded-lg bg-linear-to-br from-yellow-400 to-amber-600 p-2 shadow-lg">
                 <Star className="h-4 w-4 fill-white text-white" />
               </div>
               Avaliação do Atendimento
@@ -106,7 +106,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
           {/* Badge com nota atual */}
           {selectedRating && (
             <Badge
-              className={`bg-gradient-to-r ${RATING_CONFIG[selectedRating as keyof typeof RATING_CONFIG].color} gap-1.5 border-0 px-3 py-1.5 text-white shadow-lg`}
+              className={`bg-linear-to-r ${RATING_CONFIG[selectedRating as keyof typeof RATING_CONFIG].color} gap-1.5 border-0 px-3 py-1.5 text-white shadow-lg`}
             >
               <Award className="h-3.5 w-3.5" />
               <span className="text-xs font-semibold">
@@ -122,14 +122,14 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
 
       <CardContent className="space-y-6">
         {/* Container das estrelas */}
-        <div className="rounded-xl border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50 p-6 dark:border-yellow-800 dark:from-yellow-950/30 dark:to-amber-950/30">
+        <div className="rounded-xl border-2 border-yellow-200 bg-linear-to-br from-yellow-50 to-amber-50 p-6 dark:border-yellow-800 dark:from-yellow-950/30 dark:to-amber-950/30">
           {/* Feedback visual do hover/seleção */}
           <div className="mb-4 flex min-h-[60px] flex-col items-center justify-center gap-2">
             {ratingConfig ? (
               <>
                 <span className="text-4xl">{ratingConfig.emoji}</span>
                 <p
-                  className={`bg-gradient-to-r ${ratingConfig.color} bg-clip-text text-lg font-bold text-transparent`}
+                  className={`bg-linear-to-r ${ratingConfig.color} bg-clip-text text-lg font-bold text-transparent`}
                 >
                   {ratingConfig.label}
                 </p>
@@ -145,7 +145,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
           </div>
 
           {/* Estrelas */}
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center md:gap-2">
             {[...Array(5)].map((_, index) => {
               const ratingValue = index + 1;
               const isActive = activeRating >= ratingValue;
@@ -161,7 +161,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
                   onMouseLeave={() => !isLoading && setHoverRating(null)}
                   disabled={isLoading}
                   className={cn(
-                    'group relative h-16 w-16 rounded-xl p-0 transition-all duration-200 hover:scale-110',
+                    'group relative h-14 w-14 rounded-xl p-0 transition-all duration-200 hover:scale-110 md:h-16 md:w-16',
                     isActive && 'scale-105',
                     isHovered && 'scale-125 shadow-lg',
                   )}
@@ -209,7 +209,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
         {/* Cards de feedback já avaliado */}
         {selectedRating && !isLoading && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-3 dark:border-emerald-800 dark:from-emerald-950/30 dark:to-teal-950/30">
+            <div className="rounded-lg border border-emerald-200 bg-linear-to-br from-emerald-50 to-teal-50 p-3 dark:border-emerald-800 dark:from-emerald-950/30 dark:to-teal-950/30">
               <div className="flex items-center gap-2">
                 <div className="rounded-lg bg-emerald-100 p-1.5 dark:bg-emerald-900/30">
                   <ThumbsUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -225,7 +225,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
               </div>
             </div>
 
-            <div className="rounded-lg border border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-3 dark:border-amber-800 dark:from-amber-950/30 dark:to-yellow-950/30">
+            <div className="rounded-lg border border-amber-200 bg-linear-to-br from-amber-50 to-yellow-50 p-3 dark:border-amber-800 dark:from-amber-950/30 dark:to-yellow-950/30">
               <div className="flex items-center gap-2">
                 <div className="rounded-lg bg-amber-100 p-1.5 dark:bg-amber-900/30">
                   <Star className="h-4 w-4 fill-amber-600 text-amber-600 dark:fill-amber-400 dark:text-amber-400" />
@@ -245,7 +245,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
               </div>
             </div>
 
-            <div className="rounded-lg border border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-3 dark:border-pink-800 dark:from-pink-950/30 dark:to-rose-950/30">
+            <div className="rounded-lg border border-pink-200 bg-linear-to-br from-pink-50 to-rose-50 p-3 dark:border-pink-800 dark:from-pink-950/30 dark:to-rose-950/30">
               <div className="flex items-center gap-2">
                 <div className="rounded-lg bg-pink-100 p-1.5 dark:bg-pink-900/30">
                   <Heart className="h-4 w-4 text-pink-600 dark:text-pink-400" />
@@ -265,7 +265,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
 
         {/* Mensagem de incentivo */}
         {!selectedRating && !isLoading && (
-          <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 dark:border-blue-800 dark:from-blue-950/30 dark:to-indigo-950/30">
+          <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-linear-to-r from-blue-50 to-indigo-50 p-4 dark:border-blue-800 dark:from-blue-950/30 dark:to-indigo-950/30">
             <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
               <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>

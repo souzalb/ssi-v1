@@ -1027,20 +1027,20 @@ export default function NewTicketPage() {
                   value={allWatchedValues.equipment || '-'}
                   icon={<Wrench className="h-4 w-4" />}
                 />
-              </div>
 
-              {filesToUpload.length > 0 && (
-                <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
-                  <div className="flex items-center gap-2">
-                    <Paperclip className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                    <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
-                      {filesToUpload.length} arquivo
-                      {filesToUpload.length !== 1 ? 's' : ''} anexado
-                      {filesToUpload.length !== 1 ? 's' : ''}
-                    </p>
+                {filesToUpload.length > 0 && (
+                  <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/30">
+                    <div className="flex items-center gap-2 p-1">
+                      <Paperclip className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                      <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+                        {filesToUpload.length} arquivo
+                        {filesToUpload.length !== 1 ? 's' : ''} anexado
+                        {filesToUpload.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
