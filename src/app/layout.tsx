@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { getServerSession } from 'next-auth';
-import { authOptions } from './api/auth/[...nextauth]/route';
 import { cn } from './_lib/utils';
 import { AuthProvider } from './(app)/auth-provider';
 import { ThemeProvider } from './_components/theme-provider';
