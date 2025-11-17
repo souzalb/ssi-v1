@@ -52,11 +52,8 @@ export default async function SettingsPage() {
         <div className="space-y-8">
           <AvatarForm user={user} />
 
-          {/* 4. Renderiza o formulário de perfil (Client Component) */}
-          {/* Passa os dados do servidor como props */}
-          <ProfileForm user={user} />
+          {/* <ProfileForm user={user} /> */}
 
-          {/* 5. Renderiza o formulário de senha (Client Component) */}
           <PasswordForm />
         </div>
       </div>

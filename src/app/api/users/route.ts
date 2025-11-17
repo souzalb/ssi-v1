@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
         name: true,
         role: true,
         areaId: true,
+        photoUrl: true,
         area: {
           select: { name: true },
         },

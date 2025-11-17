@@ -492,12 +492,12 @@ export default function NewTicketPage() {
         </Card>
 
         {/* Formulário Principal */}
-        <Card className="relative overflow-hidden border-0 shadow-xl dark:bg-slate-900">
+        <Card className="relative overflow-hidden border-0 p-0 shadow-xl dark:bg-slate-900">
           <div
             className={`absolute top-0 right-0 left-0 h-1 bg-linear-to-r ${stepGradient}`}
           />
 
-          <CardContent className="p-6 md:p-8">
+          <CardContent className="p-6 md:p-6">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -848,7 +848,7 @@ export default function NewTicketPage() {
                         multiple
                         onChange={handleFileChange}
                         disabled={isLoading}
-                        className="h-12 cursor-pointer border-2 text-base transition-all file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950/30 dark:file:text-indigo-400"
+                        className="h-10 cursor-pointer border-2 text-base transition-all file:mr-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950/30 dark:file:text-indigo-400"
                       />
                     </FormControl>
                     <FormDescription>

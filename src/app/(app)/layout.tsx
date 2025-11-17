@@ -16,12 +16,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
         {/* O conteúdo da página (Client ou Server) é renderizado dentro do provedor */}
         <main className="flex-1">{children}</main>
+        <Footer
+          companyName="SSI Tech Support"
+          supportEmail="suporte@ssi-techsupport.com"
+          showSocial={true}
+        />
       </div>
-      <Footer
-        companyName="SSI Tech Support"
-        supportEmail="suporte@ssi-techsupport.com"
-        showSocial={true}
-      />
     </AuthProvider>
   );
 }

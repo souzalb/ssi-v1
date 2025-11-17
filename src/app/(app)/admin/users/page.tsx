@@ -71,6 +71,11 @@ import {
   SelectValue,
 } from '@/app/_components/ui/select';
 import { cn } from '@/app/_lib/utils';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/app/_components/ui/avatar';
 
 // Tipo do Usuário
 type UserWithArea = {
@@ -78,6 +83,7 @@ type UserWithArea = {
   name: string;
   email: string;
   role: Role;
+  photoUrl?: string | null;
   area: {
     id: string;
     name: AreaName;
@@ -102,7 +108,7 @@ const ROLE_CONFIG = {
     icon: Shield,
   },
   [Role.MANAGER]: {
-    label: 'Gerente',
+    label: 'Gestor',
     color: 'text-emerald-700 dark:text-emerald-400',
     bgColor: 'bg-emerald-100/80 dark:bg-emerald-950/40',
     borderColor: 'border-emerald-200/60 dark:border-emerald-800/60',
@@ -529,12 +535,20 @@ export default function UserManagementPage() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 font-bold text-white shadow-md backdrop-blur-xl">
-                                {user.name
-                                  .split(' ')
-                                  .map((n) => n[0])
-                                  .join('')
-                                  .substring(0, 2)
-                                  .toUpperCase()}
+                                <Avatar className="h-10 w-10">
+                                  <AvatarImage
+                                    src={user.photoUrl ?? undefined}
+                                    alt={user.name}
+                                  />
+                                  <AvatarFallback>
+                                    {user.name
+                                      .split(' ')
+                                      .map((n) => n[0])
+                                      .join('')
+                                      .substring(0, 2)
+                                      .toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
                               </div>
                               <div>
                                 <p className="font-semibold text-slate-900 dark:text-slate-100">

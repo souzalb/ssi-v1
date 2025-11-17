@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Role } from '@prisma/client';
+import { AreaName, Role } from '@prisma/client';
 import { toast } from 'sonner';
 import {
   Form,
@@ -68,6 +68,12 @@ export function EditUserForm({ user, onSuccess }: EditUserFormProps) {
       areaId: user.areaId || null, // Garante que o valor seja 'null' ou um ID
     },
   });
+
+  const areaLabels: Record<AreaName, string> = {
+    TI: 'TI',
+    BUILDING: 'Predial',
+    ELECTRICAL: 'Elétrica',
+  };
 
   // 5. Buscar Áreas (para o Select)
   useEffect(() => {
@@ -197,7 +203,7 @@ export function EditUserForm({ user, onSuccess }: EditUserFormProps) {
                     <SelectItem value="none">Nenhuma Área</SelectItem>
                     {areas.map((area) => (
                       <SelectItem key={area.id} value={area.id}>
-                        {area.name}
+                        {areaLabels[area.name as AreaName] || area.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -26,7 +26,6 @@ export default async function RootLayout({
         className={cn(
           'bg-background min-h-screen font-sans antialiased',
           inter.className,
-          'pb-16 md:pb-0', // <-- NOVO: Adiciona padding inferior para o menu móvel
         )}
       >
         <AuthProvider>
