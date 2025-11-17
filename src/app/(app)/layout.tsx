@@ -1,3 +1,4 @@
+import { Footer } from '../_components/footer';
 import { Header } from '../_components/header';
 import { AuthProvider } from './auth-provider'; // <-- 1. Importe o novo provedor
 
@@ -16,6 +17,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {/* O conteúdo da página (Client ou Server) é renderizado dentro do provedor */}
         <main className="flex-1">{children}</main>
       </div>
+      <Footer
+        companyName="SSI Tech Support"
+        supportEmail="suporte@ssi-techsupport.com"
+        showSocial={true}
+      />
     </AuthProvider>
   );
 }

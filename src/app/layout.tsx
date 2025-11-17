@@ -43,12 +43,6 @@ export default async function RootLayout({
 
             <Toaster richColors />
           </ThemeProvider>
-
-          <Footer
-            companyName="SSI Tech Support"
-            supportEmail="suporte@ssi-techsupport.com"
-            showSocial={true}
-          />
         </AuthProvider>
       </body>
     </html>
