@@ -114,7 +114,7 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="relative z-10 px-6 pb-8">
+        <CardContent className="relative z-10 px-8 pb-8">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <FieldGroup>
               {/* Campo de Email */}
