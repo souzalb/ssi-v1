@@ -23,7 +23,7 @@ interface NewTicketEmailProps {
   ticketUrl: string;
   ticketId?: string;
   areaName?: string;
-  createdAt?: string;
+  createdAt?: Date;
 }
 
 // Mapeamento de prioridades
@@ -69,6 +69,102 @@ export const NewTicketEmail = ({
 }: NewTicketEmailProps) => {
   const previewText = `Novo chamado: ${ticketTitle}`;
   const priority = priorityConfig[ticketPriority] || priorityConfig.MEDIUM;
+
+  function renderDetailRow(
+    icon: string,
+    label: string,
+    value: string | undefined | null,
+  ) {
+    if (!value) return null;
+
+    return (
+      <table
+        role="presentation"
+        width="100%"
+        cellPadding={0}
+        cellSpacing={0}
+        style={{
+          borderCollapse: 'separate',
+          borderSpacing: 0,
+          marginBottom: '14px',
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0', // borda suave
+          boxShadow: '0 1px 2px rgba(0,0,0,0.06)', // sombra leve estilo card
+        }}
+      >
+        <tbody>
+          <tr>
+            {/* Ícone */}
+            <td
+              width="56"
+              style={{
+                verticalAlign: 'middle',
+                padding: '12px',
+                borderTopLeftRadius: '12px',
+                borderBottomLeftRadius: '12px',
+              }}
+            >
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  display: 'inline-block',
+                  borderRadius: '8px',
+                  backgroundColor: '#f1f5f9',
+                  textAlign: 'center',
+                  lineHeight: '36px',
+                  fontSize: '18px',
+                  color: '#1f2937',
+                  fontFamily: 'sans-serif',
+                }}
+              >
+                {icon}
+              </div>
+            </td>
+
+            {/* Conteúdo */}
+            <td
+              style={{
+                verticalAlign: 'middle',
+                padding: '12px',
+                borderTopRightRadius: '12px',
+                borderBottomRightRadius: '12px',
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: '#64748b',
+                    margin: 0,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontFamily: 'sans-serif',
+                  }}
+                >
+                  {label}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    color: '#0f172a',
+                    marginTop: '6px',
+                    fontFamily: 'sans-serif',
+                  }}
+                >
+                  {value}
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
+  }
 
   return (
     <Html>
@@ -120,44 +216,16 @@ export const NewTicketEmail = ({
             <Heading style={ticketTitleStyle}>{ticketTitle}</Heading>
 
             {/* Grid de detalhes */}
-            <div style={detailsGrid}>
-              <div style={detailCard}>
-                <div style={detailIcon}>👤</div>
-                <div style={detailContent}>
-                  <Text style={detailLabel}>Solicitante</Text>
-                  <Text style={detailValue}>{requesterName}</Text>
-                </div>
-              </div>
-
-              {areaName && (
-                <div style={detailCard}>
-                  <div style={detailIcon}>🏢</div>
-                  <div style={detailContent}>
-                    <Text style={detailLabel}>Área Responsável</Text>
-                    <Text style={detailValue}>{areaName}</Text>
-                  </div>
-                </div>
-              )}
-
-              {ticketId && (
-                <div style={detailCard}>
-                  <div style={detailIcon}>🔖</div>
-                  <div style={detailContent}>
-                    <Text style={detailLabel}>ID do Chamado</Text>
-                    <Text style={detailValue}>{ticketId}</Text>
-                  </div>
-                </div>
-              )}
-
-              {createdAt && (
-                <div style={detailCard}>
-                  <div style={detailIcon}>📅</div>
-                  <div style={detailContent}>
-                    <Text style={detailLabel}>Data de Abertura</Text>
-                    <Text style={detailValue}>{createdAt}</Text>
-                  </div>
-                </div>
-              )}
+            <div style={{ width: '100%', marginTop: 0 }}>
+              {renderDetailRow('👤', 'Solicitante', requesterName)}
+              {areaName && renderDetailRow('🏢', 'Área Responsável', areaName)}
+              {ticketId && renderDetailRow('🔖', 'ID do Chamado', ticketId)}
+              {createdAt &&
+                renderDetailRow(
+                  '📅',
+                  'Data de Abertura',
+                  createdAt.toLocaleDateString(),
+                )}
             </div>
           </Section>
 
@@ -282,9 +350,11 @@ const descriptionText = {
 const mainCard = {
   backgroundColor: '#f8fafc',
   borderRadius: '12px',
-  padding: '28px',
-  margin: '0 40px 28px',
+  padding: '28px 32px',
+  margin: '0 auto 28px',
+  width: '85%',
   border: '2px solid #e2e8f0',
+  boxSizing: 'border-box' as const,
 };
 
 const priorityBadge = {
@@ -312,26 +382,34 @@ const ticketTitleStyle = {
 
 const detailsGrid = {
   display: 'grid',
-  gap: '12px',
+  gridTemplateColumns: '1fr',
+  rowGap: '14px',
 };
 
 const detailCard = {
   backgroundColor: '#ffffff',
-  padding: '16px',
+  padding: '14px 16px',
   borderRadius: '10px',
   border: '1px solid #e2e8f0',
   display: 'flex',
   alignItems: 'center',
-  gap: '12px',
+  gap: '14px',
+  minHeight: '60px',
+  boxSizing: 'border-box' as const,
 };
 
 const detailIcon = {
-  fontSize: '24px',
+  width: '36px',
+  height: '36px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '8px',
+  backgroundColor: '#f1f5f9',
+  fontSize: '20px',
   lineHeight: '1',
-  minWidth: '32px',
-  textAlign: 'center' as const,
+  flexShrink: 0,
 };
-
 const detailContent = {
   flex: '1',
 };

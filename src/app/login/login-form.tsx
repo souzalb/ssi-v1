@@ -107,7 +107,7 @@ export function LoginForm({
           </div>
 
           <CardTitle className="text-xl font-black text-white drop-shadow-lg md:text-3xl">
-            Bem-vindo de volta! 👋
+            Bem-vindo de volta!
           </CardTitle>
           <CardDescription className="text-sm text-white/80 drop-shadow-md md:text-base">
             Entre com suas credenciais para acessar o sistema

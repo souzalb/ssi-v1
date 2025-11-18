@@ -6,8 +6,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 // --- 1. Importações de Email ---
-import { TicketAssignedEmail } from '@/emails/ticket-assigned-email';
-import { TicketStatusUpdateEmail } from '@/emails/ticket-status-update-email'; // <-- NOVO TEMPLATE
+import TicketAssignedEmail from '@/emails/ticket-assigned-email';
+import TicketStatusUpdateEmail from '@/emails/ticket-status-update-email'; // <-- NOVO TEMPLATE
 import React from 'react';
 import db from '@/app/_lib/prisma';
 import { fromEmail, resend } from '@/app/_lib/resend';
@@ -29,6 +29,16 @@ export async function PATCH(
     // Garantir que temos o nome do atualizador
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
+
+  const statusLabels: Record<string, string> = {
+    OPEN: 'Aberto',
+    ASSIGNED: 'Atribuído',
+    IN_PROGRESS: 'Em Andamento',
+    ON_HOLD: 'Em Espera',
+    RESOLVED: 'Resolvido',
+    CLOSED: 'Fechado',
+    CANCELLED: 'Cancelado',
+  };
 
   // 2.2. Obter ID do Chamado
   const params = await context.params;
@@ -151,13 +161,18 @@ export async function PATCH(
         await resend.emails.send({
           from: fromEmail!,
           to: updatedTicket.technician.email,
-          subject: `Você foi atribuído ao Chamado #${updatedTicket.id}: ${updatedTicket.title}`,
+          subject: `Você foi atribuído ao Chamado #${updatedTicket.ticketId}: ${updatedTicket.title}`,
           react: React.createElement(TicketAssignedEmail, {
             technicianName: updatedTicket.technician.name || 'Técnico',
             requesterName: updatedTicket.requester.name,
             ticketTitle: updatedTicket.title,
             ticketPriority: updatedTicket.priority,
             ticketUrl: ticketUrl,
+            ticketId: updatedTicket.ticketId,
+            areaName: updatedTicket.area.name,
+            location: updatedTicket.location,
+            equipment: updatedTicket.equipment,
+            assignedAt: new Date(),
           }),
         });
       } catch (emailError) {
@@ -178,14 +193,16 @@ export async function PATCH(
         await resend.emails.send({
           from: fromEmail!,
           to: ticket.requester.email,
-          subject: `Status do seu chamado #${ticket.id} atualizado para: ${updatedTicket.status}`,
+          subject: `Status do seu chamado #${ticket.ticketId} atualizado para: ${statusLabels[updatedTicket.status]}`,
           react: React.createElement(TicketStatusUpdateEmail, {
             requesterName: ticket.requester.name || 'Solicitante',
-            updaterName: updaterName || 'Equipa', // Nome de quem está logado
+            updaterName: updaterName || 'Equipe', // Nome de quem está logado
             ticketTitle: ticket.title,
             oldStatus: ticket.status, // Status antigo (do 'ticket')
             newStatus: updatedTicket.status, // Status novo (do 'updatedTicket')
             ticketUrl: ticketUrl,
+            updatedAt: ticket.updatedAt,
+            ticketId: ticket.ticketId,
           }),
         });
       } catch (emailError) {

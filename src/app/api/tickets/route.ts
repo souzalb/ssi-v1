@@ -237,6 +237,9 @@ async function sendNotificationToManagers(ticket: any): Promise<void> {
               ticketTitle: ticket.title,
               ticketPriority: ticket.priority,
               ticketUrl,
+              ticketId: ticket.ticketId,
+              areaName: ticket.area.name,
+              createdAt: ticket.createdAt,
             }),
           });
 
