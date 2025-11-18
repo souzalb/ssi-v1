@@ -17,6 +17,9 @@ import {
   Sparkles,
   Filter,
   ChevronRight,
+  KeyRound,
+  Check,
+  Copy,
 } from 'lucide-react';
 import {
   Dialog,
@@ -158,6 +161,11 @@ export default function UserManagementPage() {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithArea | null>(null);
 
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isPasswordDisplayOpen, setIsPasswordDisplayOpen] = useState(false);
+  const [userToAction, setUserToAction] = useState<UserWithArea | null>(null);
+  const [newPassword, setNewPassword] = useState<string | null>(null);
+
   // Buscar usuários e áreas
   const fetchData = async () => {
     setIsLoading(true);
@@ -207,6 +215,11 @@ export default function UserManagementPage() {
   const openDeleteAlert = (user: UserWithArea) => {
     setSelectedUser(user);
     setIsDeleteAlertOpen(true);
+  };
+
+  const openResetAlert = (user: UserWithArea) => {
+    setUserToAction(user);
+    setIsResetConfirmOpen(true);
   };
 
   const handleDeleteUser = async () => {
@@ -267,6 +280,43 @@ export default function UserManagementPage() {
 
   const hasActiveFilters =
     searchTerm !== '' || roleFilter !== 'all' || areaFilter !== 'all';
+
+  const handleResetPassword = async () => {
+    if (!userToAction) return;
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/users/${userToAction.id}/reset-password`,
+        {
+          method: 'POST',
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Falha ao resetar a senha');
+      }
+
+      // Sucesso!
+      setNewPassword(data.newPassword); // Guarda a nova senha
+      setIsResetConfirmOpen(false); // Fecha o alerta de confirmação
+      setIsPasswordDisplayOpen(true); // ABRE o modal de sucesso
+      toast.success(`Senha para ${userToAction.name} resetada!`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error('Erro', { description: error.message });
+    } finally {
+      setIsLoading(false);
+      setUserToAction(null); // Limpa o utilizador em ação
+    }
+  };
+
+  // --- 5. NOVA FUNÇÃO: Copiar para a Clipboard ---
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Senha copiada para a área de transferência!');
+  };
 
   return (
     <div className="min-h-screen p-4 md:p-8 dark:bg-slate-950">
@@ -620,10 +670,18 @@ export default function UserManagementPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/30"
+                                  className="cursor-pointer focus:bg-orange-50 focus:text-orange-600 dark:focus:bg-orange-700/30"
+                                  onClick={() => openResetAlert(user)}
+                                >
+                                  <KeyRound className="h-4 w-4 focus:text-orange-600" />
+                                  Resetar Senha
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="cursor-pointer gap-2 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/30"
                                   onClick={() => openDeleteAlert(user)}
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-4 w-4 focus:text-red-700" />
                                   Deletar usuário
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -689,6 +747,74 @@ export default function UserManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={isResetConfirmOpen}
+        onOpenChange={setIsResetConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Resetar Senha</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem a certeza que quer resetar a senha para{' '}
+              <span className="font-medium text-slate-900 dark:text-slate-100">
+                {userToAction?.name}
+              </span>
+              ? Esta ação é irreversível.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetPassword}
+              disabled={isLoading}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {isLoading ? 'Aguarde...' : 'Sim, resetar senha'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* --- 8. NOVO: Modal de SUCESSO (Mostrar Nova Senha) --- */}
+      <Dialog
+        open={isPasswordDisplayOpen}
+        onOpenChange={setIsPasswordDisplayOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <Check className="h-6 w-6 text-green-600" />
+            </div>
+            <DialogTitle className="pt-4 text-center">
+              Senha Resetada!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-muted-foreground text-center text-sm">
+              A nova senha temporária para o utilizador foi gerada. Por favor,
+              copie-a e envie-a de forma segura.
+            </p>
+            <div className="relative">
+              <Input
+                id="new-password"
+                readOnly
+                value={newPassword || '...'}
+                className="pr-12 font-mono text-lg tracking-wider"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2"
+                onClick={() => copyToClipboard(newPassword || '')}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
