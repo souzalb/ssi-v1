@@ -135,7 +135,7 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
         {/* Gradient decorativo no topo */}
         <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-yellow-400 via-amber-500 to-orange-500" />
 
-        <CardHeader className="pb-4">
+        <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2 text-xl">
@@ -170,9 +170,9 @@ export function TicketRating({ ticketId, currentRating }: TicketRatingProps) {
 
         <CardContent className="space-y-6">
           {/* Container das estrelas */}
-          <div className="rounded-xl border-2 border-yellow-200 bg-linear-to-br from-yellow-50 to-amber-50 p-6 dark:border-yellow-800 dark:from-yellow-950/30 dark:to-amber-950/30">
+          <div className="rounded-xl border-2 border-yellow-200 bg-linear-to-br from-yellow-50 to-amber-50 p-4 dark:border-yellow-800 dark:from-yellow-950/30 dark:to-amber-950/30">
             {/* Feedback visual do hover/seleção */}
-            <div className="mb-4 flex min-h-[60px] flex-col items-center justify-center gap-2">
+            <div className="mb-2 flex min-h-[60px] flex-col items-center justify-center gap-2">
               {ratingConfig ? (
                 <>
                   <span className="text-4xl">{ratingConfig.emoji}</span>

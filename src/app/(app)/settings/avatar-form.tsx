@@ -179,7 +179,7 @@ export function AvatarForm({ user }: AvatarFormProps) {
           {/* Avatar Preview */}
           <div className="flex flex-col items-center gap-6 sm:flex-row">
             {/* Avatar Grande com Overlay */}
-            <div className="relative">
+            <div className="relative flex flex-col items-center">
               <div className="relative">
                 <Avatar className="h-24 w-24 border-4 border-white shadow-2xl ring-4 ring-slate-100 md:h-32 md:w-32 dark:border-slate-800 dark:ring-slate-800">
                   <AvatarImage
@@ -318,7 +318,7 @@ export function AvatarForm({ user }: AvatarFormProps) {
             <Button
               type="submit"
               disabled={isLoading || !file}
-              className="flex-1 gap-2 bg-linear-to-r from-blue-500 to-purple-600 font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50"
+              className="w-full flex-1 gap-2 bg-linear-to-r from-blue-500 to-purple-600 font-bold shadow-lg transition-all hover:shadow-xl disabled:opacity-50"
             >
               {isLoading ? (
                 <>

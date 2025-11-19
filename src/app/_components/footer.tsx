@@ -228,7 +228,7 @@ export function Footer({
               <div className="flex flex-col items-center gap-2 text-sm text-slate-600 md:flex-row dark:text-slate-400">
                 Desenvolvido por
                 <Link
-                  href="https://github.com/souzalb"
+                  href="https://br.linkedin.com/in/lincolnsouza10"
                   className="font-semibold"
                   target="_blank"
                   rel="noopener noreferrer"
