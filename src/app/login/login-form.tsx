@@ -31,8 +31,17 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
+  ScrollText,
 } from 'lucide-react';
 import { cn } from '../_lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../_components/ui/dialog';
+import { PrivacyContent } from '../_components/privacy-content';
+import { TermsContent } from '../_components/terms-content';
 
 // Schema de Validação
 const formSchema = z.object({
@@ -49,6 +58,9 @@ export function LoginForm({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -243,25 +255,61 @@ export function LoginForm({
       </Card>
 
       {/* Footer com termos */}
-      <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center backdrop-blur-xl md:min-w-[500px]">
+      <div className="rounded-2xl border border-white/10 bg-white/5 px-2 py-4 text-center backdrop-blur-xl md:min-w-[500px]">
         <FieldDescription className="text-sm leading-relaxed text-white/70">
           Ao fazer login, você concorda com nossos{' '}
-          <a
-            href="#"
-            className="font-semibold text-white underline-offset-2 transition-colors hover:text-white/90 hover:underline"
+          {/* Botão 1: Termos de Serviço */}
+          <Button
+            type="button"
+            onClick={() => setIsTermsOpen(true)}
+            className="hover:text-primary p-0 underline underline-offset-4"
+            variant="ghost"
           >
             Termos de Serviço
-          </a>{' '}
-          e{' '}
-          <a
-            href="#"
-            className="font-semibold text-white underline-offset-2 transition-colors hover:text-white/90 hover:underline"
+          </Button>{' '}
+          e {/* Botão 2: Política de Privacidade */}
+          <Button
+            type="button"
+            onClick={() => setIsPrivacyOpen(true)}
+            className="hover:text-primary p-0 underline underline-offset-4"
+            variant="ghost"
           >
             Política de Privacidade
-          </a>
-          .
+          </Button>
         </FieldDescription>
       </div>
+
+      {/* --- 5. MODAIS (Dialogs) --- */}
+
+      {/* Modal Termos de Serviço */}
+      <Dialog open={isTermsOpen} onOpenChange={setIsTermsOpen}>
+        <DialogContent className="max-h-[90vh] min-w-[40%] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <ScrollText className="h-6 w-6 text-blue-600" />
+              <DialogTitle>Termos de Serviço</DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="mt-4">
+            <TermsContent /> {/* Conteúdo do documento */}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Política de Privacidade */}
+      <Dialog open={isPrivacyOpen} onOpenChange={setIsPrivacyOpen}>
+        <DialogContent className="max-h-[90vh] min-w-[40%] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="h-6 w-6 text-emerald-600" />
+              <DialogTitle>Política de Privacidade</DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="mt-4">
+            <PrivacyContent /> {/* Conteúdo do documento */}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
