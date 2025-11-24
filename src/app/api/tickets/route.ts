@@ -9,7 +9,9 @@ import { addBusinessDays } from 'date-fns';
 import db from '@/app/_lib/prisma';
 import { fromEmail, resend } from '@/app/_lib/resend';
 import { NewTicketEmail } from '@/emails/new-ticket-email';
+
 import { generateTicketIdV2 } from '@/app/_lib/generate-ticket-id';
+import TicketConfirmationEmail from '@/emails/ticket-confirmation-email';
 
 /* eslint-disable */
 
@@ -140,11 +142,16 @@ export async function POST(req: Request) {
       },
     });
 
-    // 7. Enviar email para gestores (fire-and-forget)
+    // 7. Enviar emails (fire-and-forget)
     const canSendEmail = fromEmail && process.env.NEXT_PUBLIC_BASE_URL;
 
     if (canSendEmail) {
-      // Não aguardar o envio de email para não bloquear a resposta
+      // Email de confirmação para o solicitante
+      sendConfirmationToRequester(newTicket).catch((error) => {
+        console.error('[EMAIL_ERROR] Erro ao enviar confirmação:', error);
+      });
+
+      // Email de notificação para gestores
       sendNotificationToManagers(newTicket).catch((error) => {
         console.error('[EMAIL_ERROR] Erro ao enviar notificação:', error);
       });
@@ -196,6 +203,52 @@ export async function POST(req: Request) {
 }
 
 /**
+ * Envia email de confirmação para o solicitante
+ */
+async function sendConfirmationToRequester(ticket: any): Promise<void> {
+  try {
+    // Verificar se o solicitante tem email e nome
+    if (!ticket.requester.email || !ticket.requester.name) {
+      console.warn(
+        `[EMAIL_WARNING] Solicitante sem email ou nome: ${ticket.requester.id}`,
+      );
+      return;
+    }
+
+    const ticketUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/tickets/${ticket.id}`;
+
+    // Enviar email de confirmação
+    await resend.emails.send({
+      from: fromEmail!,
+      to: ticket.requester.email,
+      subject: `✅ Chamado Criado: ${ticket.ticketId}`,
+      react: React.createElement(TicketConfirmationEmail, {
+        requesterName: ticket.requester.name,
+        ticketTitle: ticket.title,
+        ticketDescription: ticket.description,
+        ticketPriority: ticket.priority,
+        ticketUrl,
+        ticketId: ticket.ticketId,
+        areaName: ticket.area.name,
+        location: ticket.location,
+        equipment: ticket.equipment,
+        createdAt: ticket.createdAt,
+      }),
+    });
+
+    console.log(
+      `[EMAIL_SUCCESS] Confirmação enviada para: ${ticket.requester.email}`,
+    );
+  } catch (error) {
+    console.error(
+      `[EMAIL_ERROR] Erro ao enviar confirmação para ${ticket.requester.email}:`,
+      error,
+    );
+    throw error;
+  }
+}
+
+/**
  * Envia notificação por email para os gestores da área
  */
 async function sendNotificationToManagers(ticket: any): Promise<void> {
@@ -230,7 +283,7 @@ async function sendNotificationToManagers(ticket: any): Promise<void> {
           await resend.emails.send({
             from: fromEmail!,
             to: manager.email!,
-            subject: `Novo Chamado ${ticket.ticketId}: ${ticket.title}`,
+            subject: `🎯 Novo Chamado ${ticket.ticketId}: ${ticket.title}`,
             react: React.createElement(NewTicketEmail, {
               managerName: manager.name!,
               requesterName: ticket.requester.name || 'Solicitante',
@@ -262,7 +315,7 @@ async function sendNotificationToManagers(ticket: any): Promise<void> {
     const failureCount = results.filter((r) => r.status === 'rejected').length;
 
     console.log(
-      `[EMAIL_SUMMARY] Enviados: ${successCount}, Falhas: ${failureCount}`,
+      `[EMAIL_SUMMARY] Gestores - Enviados: ${successCount}, Falhas: ${failureCount}`,
     );
   } catch (error) {
     console.error('[EMAIL_ERROR] Erro geral ao enviar notificações:', error);
