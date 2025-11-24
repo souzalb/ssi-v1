@@ -277,7 +277,7 @@ const container = {
 
 /* ==== HEADER COM GRADIENTE ==== */
 const header = {
-  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+  background: 'green',
   padding: '40px 32px',
   textAlign: 'center' as const,
 };
@@ -481,7 +481,7 @@ const btnContainer = {
 };
 
 const button = {
-  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+  background: 'green',
   color: '#ffffff',
   padding: '16px 32px',
   borderRadius: '12px',

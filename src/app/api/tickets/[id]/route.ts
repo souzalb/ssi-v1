@@ -205,6 +205,8 @@ export async function PATCH(
             ticketId: ticket.ticketId,
           }),
         });
+        console.log('enviou o email');
+        console.log(fromEmail!);
       } catch (emailError) {
         console.error('[API_TICKETS_STATUS_EMAIL_ERROR]', emailError);
       }
