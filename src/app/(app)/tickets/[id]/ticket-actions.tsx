@@ -201,7 +201,7 @@ export function TicketActions({ ticket, currentUser }: TicketActionsProps) {
       };
     if (isManager)
       return {
-        label: 'Gerente',
+        label: 'Gestor',
         color:
           'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30',
         icon: Zap,
