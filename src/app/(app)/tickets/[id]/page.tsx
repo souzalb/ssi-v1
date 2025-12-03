@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 
-import { Role, Status } from '@prisma/client';
+import { Area, Role, Status } from '@prisma/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -86,7 +86,15 @@ async function getTicketData(ticketId: string) {
     return redirect('/dashboard');
   }
 
-  return { ticket, session };
+  let areas: { id: string; name: string }[] = [];
+  if (role === Role.MANAGER || role === Role.SUPER_ADMIN) {
+    areas = (await db.area.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    })) as Area[];
+  }
+
+  return { ticket, session, areas };
 }
 
 const STATUS_CONFIG: Record<
@@ -205,7 +213,7 @@ export default async function TicketDetailPage({
     return null;
   }
 
-  const { ticket, session } = data;
+  const { ticket, session, areas } = data;
 
   const isRequester = session.user.id === ticket.requesterId;
 
@@ -255,8 +263,8 @@ export default async function TicketDetailPage({
           <div
             className={
               session.user.role != 'COMMON'
-                ? 'space-y-6 lg:col-span-8'
-                : 'space-y-6 lg:col-span-12'
+                ? 'h-full space-y-6 lg:col-span-8'
+                : 'h-full space-y-6 lg:col-span-12'
             }
           >
             {/* Hero Card - Informações Principais */}
@@ -350,7 +358,7 @@ export default async function TicketDetailPage({
             </Card>
 
             {/* Descrição */}
-            <Card className="group relative overflow-hidden border-0 pt-1 shadow-xl backdrop-blur-xl transition-all dark:bg-slate-900">
+            <Card className="group relative min-h-[220px] overflow-hidden border-0 pt-1 shadow-xl backdrop-blur-xl transition-all dark:bg-slate-900">
               <div className="absolute top-0 right-0 left-0 h-1 rounded-t-2xl bg-linear-to-r from-emerald-500 to-teal-500" />
               <CardHeader className="border-b bg-linear-to-r from-emerald-50/80 to-teal-50/80 p-4 backdrop-blur-xl dark:from-emerald-950/30 dark:to-teal-950/30 [.border-b]:pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg font-bold sm:gap-3 sm:text-xl">
@@ -371,7 +379,11 @@ export default async function TicketDetailPage({
           {/* Ações */}
           {session.user.role != 'COMMON' ? (
             <div className="h-full lg:col-span-4">
-              <TicketActions ticket={ticket} currentUser={session.user} />
+              <TicketActions
+                ticket={ticket}
+                currentUser={session.user}
+                allAreas={areas}
+              />
             </div>
           ) : (
             <></>

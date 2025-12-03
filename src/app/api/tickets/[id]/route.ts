@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+import { Priority, Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { Role, Status } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
@@ -7,14 +7,17 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 // --- 1. Importações de Email ---
 import TicketAssignedEmail from '@/emails/ticket-assigned-email';
-import TicketStatusUpdateEmail from '@/emails/ticket-status-update-email'; // <-- NOVO TEMPLATE
+import TicketStatusUpdateEmail from '@/emails/ticket-status-update-email';
 import React from 'react';
 import db from '@/app/_lib/prisma';
 import { fromEmail, resend } from '@/app/_lib/resend';
+import { addBusinessDays } from 'date-fns';
 
 // --- Schema (sem alteração) ---
 const ticketUpdateSchema = z.object({
   status: z.nativeEnum(Status).optional(),
+  priority: z.nativeEnum(Priority).optional(),
+  areaId: z.string().cuid().optional(),
   technicianId: z.string().cuid().nullable().optional(),
 });
 
@@ -44,7 +47,7 @@ export async function PATCH(
   const params = await context.params;
   const ticketId = params.id;
 
-  // --- 2.3. MODIFICADO: Obter dados do chamado ATUAL ---
+  // --- 2.3. Obter dados do chamado ATUAL ---
   // Precisamos dos dados do solicitante (para o email)
   const ticket = await db.ticket.findUnique({
     where: { id: ticketId },
@@ -63,7 +66,7 @@ export async function PATCH(
     );
   }
 
-  // 2.4. Autorização (RBAC) (sem alteração)
+  // 2.4. Autorização (RBAC)
   const { role, areaId, id: userId, name: updaterName } = session.user;
   const isSuperAdmin = role === Role.SUPER_ADMIN;
   const isManager = role === Role.MANAGER && ticket.areaId === areaId;
@@ -75,7 +78,7 @@ export async function PATCH(
   }
 
   try {
-    // 2.5. Validar o corpo (body) (sem alteração)
+    // 2.5. Validar o corpo (body)
     const body = await req.json();
     const validation = ticketUpdateSchema.safeParse(body);
     if (!validation.success) {
@@ -85,7 +88,12 @@ export async function PATCH(
       );
     }
 
-    const { status, technicianId } = validation.data;
+    const {
+      status,
+      technicianId,
+      priority,
+      areaId: newAreaId,
+    } = validation.data;
 
     if (status === Status.CLOSED) {
       return NextResponse.json(
@@ -93,6 +101,14 @@ export async function PATCH(
           error: 'Apenas o solicitante pode marcar um chamado como "Fechado".',
         },
         { status: 403 }, // Forbidden
+      );
+    }
+
+    // --- 2. NOVA REGRA: Apenas Gestor/Admin muda Prioridade ou Área ---
+    if ((priority || newAreaId) && !isSuperAdmin && !isManager) {
+      return NextResponse.json(
+        { error: 'Apenas Gestores podem alterar a Área ou Prioridade.' },
+        { status: 403 },
       );
     }
 
@@ -125,6 +141,39 @@ export async function PATCH(
         if (ticket.status === Status.OPEN && !status) {
           dataToUpdate.status = Status.ASSIGNED;
         }
+      }
+    }
+
+    if (priority) {
+      dataToUpdate.priority = priority;
+
+      // Recalcular o SLA com base na data de criação ORIGINAL
+      let slaDays = 5;
+      switch (priority) {
+        case Priority.URGENT:
+          slaDays = 1;
+          break;
+        case Priority.HIGH:
+          slaDays = 3;
+          break;
+        case Priority.MEDIUM:
+          slaDays = 5;
+          break;
+        case Priority.LOW:
+          slaDays = 10;
+          break;
+      }
+      dataToUpdate.slaDeadline = addBusinessDays(ticket.createdAt, slaDays);
+    }
+
+    if (newAreaId) {
+      dataToUpdate.area = { connect: { id: newAreaId } };
+
+      // Por segurança, se mudar de área, desatribuímos o técnico antigo
+      // a menos que um novo técnico também tenha sido enviado.
+      if (technicianId === undefined && ticket.technicianId) {
+        dataToUpdate.technician = { disconnect: true };
+        dataToUpdate.status = Status.OPEN; // Volta para OPEN na nova área
       }
     }
 
