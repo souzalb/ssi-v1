@@ -42,6 +42,7 @@ import {
 } from '../_components/ui/dialog';
 import { PrivacyContent } from '../_components/privacy-content';
 import { TermsContent } from '../_components/terms-content';
+import Link from 'next/link';
 
 // Schema de Validação
 const formSchema = z.object({
@@ -167,12 +168,12 @@ export function LoginForm({
                   >
                     Senha
                   </FieldLabel>
-                  <a
-                    href="#"
+                  <Link
+                    href="/forgot-password"
                     className="text-sm font-medium text-white/70 transition-colors hover:text-white hover:underline"
                   >
                     Esqueceu a senha?
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-white/60" />

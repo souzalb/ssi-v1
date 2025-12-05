@@ -5,7 +5,7 @@ import { signOut } from 'next-auth/react';
 import { Role } from '@prisma/client';
 
 // --- 1. Importar os ícones ---
-import { User, LogOut, Settings2, MoreHorizontal } from 'lucide-react';
+import { User, LogOut, MoreHorizontal, HelpCircleIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +28,7 @@ interface UserNavProps {
   imageUrl: string | null;
 }
 
-export function UserNav({ name, email, role, imageUrl }: UserNavProps) {
+export function UserNav({ name, email, imageUrl }: UserNavProps) {
   // Pega as iniciais do nome para o AvatarFallback (sem alteração)
   const initials = name
     .split(' ')
@@ -97,6 +97,22 @@ export function UserNav({ name, email, role, imageUrl }: UserNavProps) {
             <Link href="/settings" className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
               <span>Minha Conta</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          {/* Link para Configurações (com ícone) */}
+          <DropdownMenuItem asChild>
+            <Link
+              href="https://drive.google.com/file/d/1c10d6YQfQVFlEUJ3qgx_3hPmkT9-cdeS/view?usp=drive_link"
+              className="cursor-pointer"
+              target="_blank"
+            >
+              <HelpCircleIcon className="mr-2 h-4 w-4" />
+              <span>Manual</span>
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>

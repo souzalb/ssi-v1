@@ -43,7 +43,7 @@ export default withAuth(
 // O 'matcher' agora isenta as páginas de termos e privacidade.
 export const config = {
   matcher: [
-    '/((?!api/auth|login|terms|privacy|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/auth|login|terms|privacy|forgot-password|reset-password|_next/static|_next/image|favicon.ico).*)',
     // Adicione URLs de templates de email aqui se necessário
   ],
 };
