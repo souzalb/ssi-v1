@@ -45,6 +45,15 @@ interface TicketsPageProps {
 
 const ITEMS_PER_PAGE = 20;
 
+//TODO: REFATORAR ESTE CÓDIGO PARA MELHORAR DESEMPENHO DAS QUERIES
+// --- CONFIGURAÇÃO DE EXCEÇÕES (Hardcode) ---
+const MULTI_AREA_MANAGERS: Record<string, string[]> = {
+  'everaldo.reis@sp.senai.br': [
+    'cmhzbzv9y0002o4k8yji9aqsk',
+    'cmhzbzv9v0001o4k8zacghs28',
+  ],
+};
+
 // O Server Component (A Página)
 export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   // 1.1. Obter a sessão
@@ -53,7 +62,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     redirect('/login');
   }
 
-  const { id: userId, role, areaId } = session.user;
+  const { id: userId, role, areaId, email } = session.user;
   const isSuperAdmin = role === Role.SUPER_ADMIN;
 
   const formattedDate = format(new Date(), 'dd/MM/yyyy, HH:mm', {
@@ -74,6 +83,9 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   const technicianFilter = resolvedSearchParams.technician;
   const areaFilter = resolvedSearchParams.area;
 
+  // Verificar se é multi-area manager ANTES de construir o where
+  const isMultiAreaManager = !!(email && MULTI_AREA_MANAGERS[email]);
+
   // 1.3. Construir a Cláusula 'where' (RBAC + Filtros)
   let where: Prisma.TicketWhereInput = {};
 
@@ -83,10 +95,15 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   } else if (role === Role.TECHNICIAN) {
     where = { technicianId: userId };
   } else if (role === Role.MANAGER) {
-    if (!areaId) {
-      where = { id: 'impossivel' };
+    // --- LÓGICA DE EXCEÇÃO ---
+    if (isMultiAreaManager) {
+      where = { areaId: { in: MULTI_AREA_MANAGERS[email!] } };
     } else {
-      where = { areaId: areaId as string };
+      if (!areaId) {
+        where = { id: 'impossivel' };
+      } else {
+        where = { areaId: areaId as string };
+      }
     }
   }
 
@@ -131,8 +148,16 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     }
   }
 
-  if (isSuperAdmin && areaFilter) {
-    where.areaId = areaFilter;
+  // Filtro de Área - CORRIGIDO
+  if (areaFilter) {
+    if (isSuperAdmin) {
+      where.areaId = areaFilter;
+    } else if (
+      isMultiAreaManager &&
+      MULTI_AREA_MANAGERS[email!].includes(areaFilter)
+    ) {
+      where.areaId = areaFilter;
+    }
   }
 
   // 1.4. Construir a Cláusula 'orderBy'
@@ -212,13 +237,24 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
     select: { status: true, createdAt: true, resolvedAt: true },
   });
 
-  // Query para buscar a lista de Áreas (Apenas para Super Admin)
-  const areaListQuery = isSuperAdmin
-    ? db.area.findMany({
-        select: { id: true, name: true },
-        orderBy: { name: 'asc' },
-      })
-    : Promise.resolve([]);
+  // Determinar se pode filtrar por área
+  const canFilterArea: boolean = isSuperAdmin || isMultiAreaManager;
+
+  // Query para buscar a lista de Áreas
+  let areaListQuery: Promise<{ id: string; name: AreaName }[]> =
+    Promise.resolve([]);
+  if (isSuperAdmin) {
+    areaListQuery = db.area.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  } else if (isMultiAreaManager) {
+    // Busca apenas as áreas que ele gere
+    areaListQuery = db.area.findMany({
+      where: { id: { in: MULTI_AREA_MANAGERS[email!] } },
+      select: { id: true, name: true },
+    });
+  }
 
   // Resolver todas as queries
   const [
@@ -385,7 +421,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
             priorities={Object.values(Priority)}
             technicians={technicianList}
             areas={areaList as { id: string; name: AreaName }[]}
-            isSuperAdmin={isSuperAdmin}
+            isSuperAdmin={canFilterArea}
           />
         </div>
 

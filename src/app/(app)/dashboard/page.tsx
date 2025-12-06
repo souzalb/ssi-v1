@@ -273,6 +273,15 @@ function calculateSatisfactionTrend(
   return { satisfactionTrend, ratingsTrend };
 }
 
+//TODO: REFATORAR ESTE CÓDIGO PARA MELHORAR DESEMPENHO DAS QUERIES
+// --- CONFIGURAÇÃO DE EXCEÇÕES (Hardcode) ---
+const MULTI_AREA_MANAGERS: Record<string, string[]> = {
+  'everaldo.reis@sp.senai.br': [
+    'cmhzbzv9y0002o4k8yji9aqsk',
+    'cmhzbzv9v0001o4k8zacghs28',
+  ],
+};
+
 export default async function DashboardPage() {
   const formattedDate = format(new Date(), 'dd/MM/yyyy, HH:mm', {
     locale: ptBR,
@@ -283,7 +292,7 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const { id, role, name, areaId } = session.user;
+  const { id, role, name, areaId, email } = session.user;
 
   let where: Prisma.TicketWhereInput = {};
 
@@ -292,10 +301,20 @@ export default async function DashboardPage() {
   } else if (role === Role.TECHNICIAN) {
     where = { technicianId: id };
   } else if (role === Role.MANAGER) {
-    if (!areaId) {
-      where = { id: 'impossivel' };
+    // --- LÓGICA DE EXCEÇÃO ---
+    // Verifica se este email está na lista de "Super Gerentes"
+    if (email && MULTI_AREA_MANAGERS[email]) {
+      // Se estiver, mostra tickets de QUALQUER uma das áreas listadas
+      where = {
+        areaId: { in: MULTI_AREA_MANAGERS[email] },
+      };
     } else {
-      where = { areaId: areaId as string };
+      // Comportamento padrão (apenas a área do perfil)
+      if (!areaId) {
+        where = { id: 'impossivel' };
+      } else {
+        where = { areaId: areaId as string };
+      }
     }
   }
 
